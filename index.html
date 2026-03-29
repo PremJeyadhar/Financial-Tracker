@@ -1,188 +1,259 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Budget & Investment Tracker</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-    <style>
-        /* [Keeping your original CSS variables and styles for brevity] */
-        :root {
-            --bg: #000000; --surface: #0a0a0a; --surface2: #111111; --text: #f0f0ef;
-            --muted: #666870; --green: #1adb8a; --red: #f05050; --radius: 14px;
-        }
-        body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
-        .header { background: #000; border-bottom: 1.5px solid rgba(255,255,255,0.1); padding: 1rem; display: flex; justify-content: space-between; align-items: center; sticky; top: 0; z-index: 100; }
-        .main { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
-        .card { background: var(--surface); border: 1.5px solid rgba(255,255,255,0.1); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
-        .tab-nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .tab-btn { background: none; border: none; color: var(--muted); padding: 10px; cursor: pointer; font-weight: 600; }
-        .tab-btn.active { color: var(--green); border-bottom: 2px solid var(--green); }
-        .inv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 1rem; }
-        /* [Remaining Styles omitted for space, identical to your original] */
-        .goal-track { height: 8px; background: #222; border-radius: 4px; overflow: hidden; margin: 8px 0; }
-        .goal-fill { height: 100%; transition: width 0.5s ease; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Budget & Investment Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #000000; --surface: #0a0a0a; --surface2: #111111; --surface3: #181818;
+  --border: rgba(255,255,255,0.08); --text: #f0f0ef; --muted: #666870;
+  --green: #1adb8a; --red: #f05050; --purple: #a78bfa; --radius: 14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-text-size-adjust:100%;overflow-x:hidden;}
+
+/* HEADER & TABS */
+.header{background:#000;border-bottom:1.5px solid var(--border);padding:0 1.25rem;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;}
+.logo{font-size:17px;font-weight:700;letter-spacing:-0.02em;}
+.logo span{color:var(--green);}
+.tab-nav{background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);border-bottom:1.5px solid var(--border);display:flex;padding:0 1.25rem;position:sticky;top:58px;z-index:99;}
+.tab-btn{background:none;border:none;border-bottom:2.5px solid transparent;padding:12px 18px;font-family:'Syne';font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;}
+.tab-btn.active{color:var(--green);border-bottom-color:var(--green);}
+.tab-btn.inv-tab.active{color:var(--purple);border-bottom-color:var(--purple);}
+
+/* MAIN & CARDS */
+.main{max-width:960px;margin:0 auto;padding:1.5rem 1.25rem 5rem;}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);}
+.section-label{font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
+
+/* GRID */
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem;}
+.stat-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;}
+.c-green{color:var(--green);} .c-red{color:var(--red);} .c-purple{color:var(--purple);}
+
+/* FORM */
+.form-group{margin-bottom:12px;}
+.form-group label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;}
+input, select{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px;color:#fff;font-family:'Syne';outline:none;}
+input:focus{border-color:var(--green);}
+.btn-primary{width:100%;background:var(--green);color:#000;border:none;padding:14px;border-radius:8px;font-weight:700;cursor:pointer;font-family:'Syne';}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;color:var(--muted);padding:10px 0;font-size:10px;text-transform:uppercase;}
+td{padding:12px 0;border-bottom:1px solid var(--border);}
+
+/* GOALS */
+.goal-row{margin-bottom:15px;}
+.goal-track{height:6px;background:var(--surface3);border-radius:10px;overflow:hidden;margin:6px 0;}
+.goal-fill{height:100%;background:var(--green);transition:width 0.8s ease;}
+
+@media(max-width:600px){ .grid-3{grid-template-columns:1fr;} }
+</style>
 </head>
 <body>
 
 <header class="header">
-    <div style="font-weight: 700; font-size: 1.2rem;">budget<span>.</span>track</div>
-    <div id="live-status" style="font-size: 11px; font-family: 'DM Mono'; color: var(--muted);">Local Mode (Private)</div>
+  <div class="logo">budget<span>.</span>track</div>
+  <div id="live-status" style="font-size:10px; font-family:'DM Mono'; color:var(--muted)">Local Mode (Private)</div>
 </header>
 
+<nav class="tab-nav">
+  <button class="tab-btn active" id="tab-budget" onclick="switchTab('budget')">Budget Tracker</button>
+  <button class="tab-btn inv-tab" id="tab-inv" onclick="switchTab('inv')">Investment Tracker</button>
+</nav>
+
 <main class="main">
-    <nav class="tab-nav">
-        <button class="tab-btn active" id="tab-budget" onclick="switchTab('budget')">Budget</button>
-        <button class="tab-btn" id="tab-inv" onclick="switchTab('inv')">Investments</button>
-    </nav>
-
-    <div id="budget-page">
-        <div class="card">
-            <h3>Monthly Spending</h3>
-            <canvas id="spend-chart" style="max-height: 200px;"></canvas>
-        </div>
-        <div class="card">
-            <input type="number" id="inp-amount" placeholder="Amount">
-            <input type="text" id="inp-reason" placeholder="Reason">
-            <button onclick="addEntry()" style="background: var(--green); color: black; border:none; padding: 10px; border-radius: 8px; width: 100%;">Add Entry</button>
-        </div>
+  <div id="budget-page">
+    <div class="section-label">Overview</div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="section-label" style="font-size:8px">Total Budget</div>
+        <div class="stat-val c-green" id="val-budget">₹68,000</div>
+      </div>
+      <div class="card">
+        <div class="section-label" style="font-size:8px">Spent</div>
+        <div class="stat-val c-red" id="val-spent">₹0</div>
+      </div>
+      <div class="card">
+        <div class="section-label" style="font-size:8px">Balance</div>
+        <div class="stat-val" id="val-balance">₹0</div>
+      </div>
     </div>
 
-    <div id="inv-page" style="display:none;">
-        <div class="inv-grid">
-            <div class="card">
-                <div style="font-size: 10px; color: var(--muted);">CURRENT VALUE</div>
-                <div id="inv-current-value" style="font-size: 24px; font-weight: 700;">₹0</div>
-            </div>
-            <div class="card">
-                <div style="font-size: 10px; color: var(--muted);">TOTAL RETURNS</div>
-                <div id="inv-returns-amt" style="font-size: 24px; font-weight: 700;">₹0</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3>Portfolio Holdings</h3>
-                <button onclick="runLivePriceUpdate(true)" style="background: transparent; color: #a78bfa; border: 1px solid #a78bfa; padding: 5px 12px; border-radius: 20px; font-size: 11px; cursor: pointer;">Refresh Live Prices</button>
-            </div>
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
-                    <thead><tr style="text-align: left; color: var(--muted); font-size: 10px;"><th>ASSET</th><th>VALUE</th><th>RETURNS</th></tr></thead>
-                    <tbody id="inv-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>Investment Goals</h3>
-            <div id="goal-container"></div>
-            <button onclick="openGoalModal()" style="margin-top: 10px; background: #333; color: white; border:none; padding: 8px; border-radius: 4px; cursor: pointer;">+ Add New Goal</button>
-        </div>
+    <div class="card">
+      <div class="section-label">Spending by Category</div>
+      <div style="height:200px; position:relative;">
+        <canvas id="spend-chart"></canvas>
+      </div>
     </div>
+
+    <div class="card">
+      <div class="section-label">Add Expenditure</div>
+      <div class="form-group">
+        <input type="number" id="inp-amount" placeholder="Amount (₹)">
+      </div>
+      <div class="form-group">
+        <input type="text" id="inp-reason" placeholder="Reason (e.g. Rent)">
+      </div>
+      <button class="btn-primary" onclick="addEntry()">+ Add Entry</button>
+    </div>
+  </div>
+
+  <div id="inv-page" style="display:none;">
+    <div class="section-label">Portfolio Summary</div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="section-label" style="font-size:8px">Invested</div>
+        <div class="stat-val" id="inv-total-invested">₹0</div>
+      </div>
+      <div class="card">
+        <div class="section-label" style="font-size:8px">Current Value</div>
+        <div class="stat-val c-purple" id="inv-current-value">₹0</div>
+      </div>
+      <div class="card">
+        <div class="section-label" style="font-size:8px">Total Returns</div>
+        <div class="stat-val" id="inv-returns-amt">₹0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <div class="section-label" style="margin:0">Holdings</div>
+        <button onclick="runLivePriceUpdate(true)" style="background:rgba(167,139,250,0.1); border:1px solid var(--purple); color:var(--purple); padding:6px 12px; border-radius:20px; font-size:10px; cursor:pointer;">Refresh Prices</button>
+      </div>
+      <table>
+        <thead><tr><th>Asset</th><th>Current</th><th>Returns</th></tr></thead>
+        <tbody id="inv-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Goals Progress</div>
+      <div id="goal-container"></div>
+    </div>
+  </div>
 </main>
 
 <script>
-// --- CONFIG & STATE ---
+// --- STATE ---
 let entries = JSON.parse(localStorage.getItem('bt2_entries')) || [];
 let invHoldings = JSON.parse(localStorage.getItem('inv_holdings')) || [];
 let invGoals = JSON.parse(localStorage.getItem('inv_goals')) || [];
+let chartObj = null;
 
+// --- UTILS ---
 const fmt = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
 
 function switchTab(tab) {
-    document.getElementById('budget-page').style.display = tab === 'budget' ? 'block' : 'none';
-    document.getElementById('inv-page').style.display = tab === 'inv' ? 'block' : 'none';
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-' + (tab === 'inv' ? 'inv' : 'budget')).classList.add('active');
-    if(tab === 'inv') renderInv();
+  document.getElementById('budget-page').style.display = tab === 'budget' ? 'block' : 'none';
+  document.getElementById('inv-page').style.display = tab === 'inv' ? 'block' : 'none';
+  document.getElementById('tab-budget').className = 'tab-btn' + (tab === 'budget' ? ' active' : '');
+  document.getElementById('tab-inv').className = 'tab-btn inv-tab' + (tab === 'inv' ? ' active' : '');
+  if(tab === 'inv') renderInv(); else renderBudget();
 }
 
-// --- ERROR FIX: Defensive Element Setting ---
-function safeSetText(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text;
+// --- BUDGET LOGIC ---
+function addEntry() {
+  const amt = parseFloat(document.getElementById('inp-amount').value);
+  const reason = document.getElementById('inp-reason').value;
+  if(!amt || !reason) return;
+  entries.unshift({ id: Date.now(), amount: amt, reason: reason, date: new Date().toLocaleDateString() });
+  localStorage.setItem('bt2_entries', JSON.stringify(entries));
+  document.getElementById('inp-amount').value = '';
+  document.getElementById('inp-reason').value = '';
+  renderBudget();
 }
 
-function showLiveStatus(msg, color) {
-    const el = document.getElementById('live-status');
-    if (el) {
-        el.textContent = msg;
-        el.style.color = color || 'var(--muted)';
-    }
+function renderBudget() {
+  const spent = entries.reduce((s, e) => s + e.amount, 0);
+  const budget = 68000;
+  safeSet('val-spent', fmt(spent));
+  safeSet('val-budget', fmt(budget));
+  safeSet('val-balance', fmt(budget - spent));
+  renderChart(spent, budget);
 }
 
-// --- RENDER FUNCTIONS ---
+function renderChart(spent, total) {
+  const ctx = document.getElementById('spend-chart');
+  if(!ctx) return;
+  if(chartObj) chartObj.destroy();
+  chartObj = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Spent', 'Remaining'],
+      datasets: [{
+        data: [spent, Math.max(0, total - spent)],
+        backgroundColor: ['#f05050', '#1adb8a'],
+        borderWidth: 0, cutout: '80%'
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+}
+
+// --- INVESTMENT LOGIC ---
 function renderInv() {
-    const totalInvested = invHoldings.reduce((s, h) => s + h.invested, 0);
-    const totalCurrent = invHoldings.reduce((s, h) => s + h.current, 0);
-    const returns = totalCurrent - totalInvested;
+  const invested = invHoldings.reduce((s, h) => s + h.invested, 0);
+  const current = invHoldings.reduce((s, h) => s + h.current, 0);
+  const returns = current - invested;
 
-    safeSetText('inv-total-invested', fmt(totalInvested));
-    safeSetText('inv-current-value', fmt(totalCurrent));
-    safeSetText('inv-returns-amt', (returns >= 0 ? '+' : '') + fmt(returns));
-    
-    const tbody = document.getElementById('inv-tbody');
-    if(tbody) {
-        tbody.innerHTML = invHoldings.map(h => `
-            <tr style="border-bottom: 1px solid #111;">
-                <td style="padding: 12px 0;">${h.name}<br><small style="color:var(--muted)">${h.type}</small></td>
-                <td>${fmt(h.current)}</td>
-                <td style="color:${h.current >= h.invested ? 'var(--green)' : 'var(--red)'}">${Math.round(((h.current-h.invested)/h.invested)*100)}%</td>
-            </tr>
-        `).join('');
-    }
-    renderGoals();
+  safeSet('inv-total-invested', fmt(invested));
+  safeSet('inv-current-value', fmt(current));
+  safeSet('inv-returns-amt', (returns >= 0 ? '+' : '') + fmt(returns));
+
+  const tbody = document.getElementById('inv-tbody');
+  if(tbody) {
+    tbody.innerHTML = invHoldings.map(h => `
+      <tr>
+        <td>${h.name}</td>
+        <td class="stat-val" style="font-size:13px">${fmt(h.current)}</td>
+        <td style="color:${h.current >= h.invested ? 'var(--green)' : 'var(--red)'}">${Math.round(((h.current-h.invested)/h.invested)*100)}%</td>
+      </tr>`).join('');
+  }
+  renderGoals();
 }
 
 function renderGoals() {
-    const container = document.getElementById('goal-container');
-    if (!container) return;
-    if (invGoals.length === 0) {
-        container.innerHTML = '<p style="color:var(--muted); font-size:12px;">No goals set.</p>';
-        return;
-    }
-    container.innerHTML = invGoals.map(g => {
-        const pct = Math.min(100, (g.saved / g.target) * 100);
-        return `
-            <div style="margin-bottom: 15px;">
-                <div style="display:flex; justify-content:space-between; font-size:13px;"><span>${g.name}</span><span>${Math.round(pct)}%</span></div>
-                <div class="goal-track"><div style="width:${pct}%; background:var(--green); height:100%;"></div></div>
-                <div style="font-size:10px; color:var(--muted)">${fmt(g.saved)} of ${fmt(g.target)}</div>
-            </div>`;
-    }).join('');
+  const container = document.getElementById('goal-container');
+  if(!container) return;
+  container.innerHTML = invGoals.map(g => {
+    const pct = Math.min(100, (g.saved / g.target) * 100);
+    return `
+      <div class="goal-row">
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+          <span>${g.name}</span><span>${Math.round(pct)}%</span>
+        </div>
+        <div class="goal-track"><div class="goal-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }).join('');
 }
 
-// --- PRIVACY-FIRST PRICE UPDATER ---
-async function runLivePriceUpdate(force = false) {
-    if (!force) return;
-    showLiveStatus("Updating prices (Private Fetch)...", "#a78bfa");
-
-    const MF_MAP = { 1800000000004: 122639 }; // Parag Parikh Example
-    
-    for (let h of invHoldings) {
-        if (h.type === 'Mutual Fund' && MF_MAP[h.id]) {
-            try {
-                const response = await fetch(`https://api.mfapi.in/mf/${MF_MAP[h.id]}/latest`);
-                const data = await response.json();
-                if (data.data && data.data[0]) {
-                    const nav = parseFloat(data.data[0].nav);
-                    const units = h.invested / h.lastNav || 0; // Simple unit est
-                    if(units > 0) h.current = Math.round(units * nav);
-                }
-            } catch (e) { console.error("Price fetch failed", e); }
-        }
+async function runLivePriceUpdate(force) {
+  if(!force) return;
+  const status = document.getElementById('live-status');
+  if(status) status.textContent = "Updating prices privately...";
+  
+  // Example MF API Fetch
+  for (let h of invHoldings) {
+    if (h.type === 'Mutual Fund' && h.schemeCode) {
+      try {
+        const res = await fetch(`https://api.mfapi.in/mf/${h.schemeCode}/latest`);
+        const data = await res.json();
+        if(data.data[0]) h.current = (h.invested / h.lastNav) * parseFloat(data.data[0].nav);
+      } catch(e) {}
     }
-    localStorage.setItem('inv_holdings', JSON.stringify(invHoldings));
-    renderInv();
-    showLiveStatus("Last updated: Just now", "var(--green)");
+  }
+  localStorage.setItem('inv_holdings', JSON.stringify(invHoldings));
+  renderInv();
+  if(status) status.textContent = "Last updated: Just now";
 }
 
-// Initialize
-window.onload = () => {
-    switchTab('budget');
-};
+window.onload = () => renderBudget();
 </script>
 </body>
 </html>
