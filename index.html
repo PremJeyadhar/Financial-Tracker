@@ -2,16 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<!--
+  viewport-fit=cover is CRITICAL — lets the app draw into the Dynamic Island
+  area so we control every pixel instead of having a white/black bar.
+-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>RupeeTrack 2026</title>
 <!-- ── iOS / PWA Web App Meta ───────────────────────────── -->
 <meta name="apple-mobile-web-app-capable" content="yes"/>
+<!-- black-translucent: status bar is transparent & content draws underneath DI -->
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="RupeeTrack"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#000000"/>
 <meta name="description" content="Personal finance tracker — budget & investments. India, FY 2026."/>
-<!-- apple-touch-icon injected by JS after canvas render -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
@@ -19,57 +23,41 @@
 <style>
 /* ══════════════════════════════════════
    APPLE iOS SYSTEM PALETTE — DARK MODE
-   Source: Apple Human Interface Guidelines
    ══════════════════════════════════════ */
 :root {
-  /* ── Backgrounds (iOS Grouped) */
   --bg:           #000000;
-  --bg-1:         #1C1C1E;   /* systemBackground */
-  --bg-2:         #2C2C2E;   /* secondarySystemBackground */
-  --bg-3:         #3A3A3C;   /* tertiarySystemBackground */
-
-  /* ── iOS System Colors (Dark) */
+  --bg-1:         #1C1C1E;
+  --bg-2:         #2C2C2E;
+  --bg-3:         #3A3A3C;
   --blue:         #0A84FF;
   --green:        #30D158;
   --red:          #FF453A;
   --orange:       #FF9F0A;
   --yellow:       #FFD60A;
-  --teal:         #40CBE0;   /* iOS System Teal — investment accent */
+  --teal:         #40CBE0;
   --indigo:       #5E5CE6;
-  --purple:       #40CBE0;   /* alias → teal (replaces old purple) */
+  --purple:       #40CBE0;
   --pink:         #FF375F;
   --mint:         #63E6BE;
-
-  /* ── Dimmed tints */
   --blue-dim:     rgba(10,132,255,0.14);
   --green-dim:    rgba(48,209,88,0.13);
   --red-dim:      rgba(255,69,58,0.13);
   --orange-dim:   rgba(255,159,10,0.13);
-  --purple-dim:   rgba(64,203,224,0.13);   /* teal dim */
+  --purple-dim:   rgba(64,203,224,0.13);
   --indigo-dim:   rgba(94,92,230,0.13);
-
-  /* ── Labels (iOS Typography) */
   --label:        #FFFFFF;
   --label-2:      rgba(235,235,245,0.60);
   --label-3:      rgba(235,235,245,0.30);
   --label-4:      rgba(235,235,245,0.16);
-
-  /* ── Separators */
   --sep:          rgba(84,84,88,0.65);
   --sep-opaque:   #38383A;
-
-  /* ── Fills */
   --fill-1:       rgba(120,120,128,0.36);
   --fill-2:       rgba(120,120,128,0.32);
   --fill-3:       rgba(118,118,128,0.24);
   --fill-4:       rgba(116,116,128,0.18);
-
-  /* ── Glass */
   --glass:        rgba(28,28,30,0.78);
   --glass-heavy:  rgba(18,18,20,0.88);
   --blur:         blur(24px) saturate(180%);
-
-  /* ── Aliases for compatibility */
   --amber:        var(--orange);
   --amber-dim:    var(--orange-dim);
   --surface:      var(--glass);
@@ -81,30 +69,44 @@
   --text-muted:   var(--label-2);
   --text-dim:     var(--label-3);
   --green-glow:   rgba(48,209,88,0.18);
-  --purple-glow:  rgba(64,203,224,0.18);   /* teal glow */
-
-  /* card-value .p uses teal */
+  --purple-glow:  rgba(64,203,224,0.18);
 
   --radius:    18px;
   --radius-sm: 12px;
   --font-d:   'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-b:   'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-m:   'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* ══ DYNAMIC ISLAND SAFE AREAS ══
+     env() values are populated by the browser from the device hardware.
+     iPhone 16 Pro Max: top ≈ 59px, bottom ≈ 34px (home indicator)
+     We store them as variables so they compose cleanly everywhere.        */
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  /* Extends the black background behind the Dynamic Island pill */
+  background: #000000;
+}
 
 body {
   background: var(--bg);
   color: var(--label);
   font-family: var(--font-b);
   font-size: 14px;
-  min-height: 100vh;
+  min-height: 100dvh; /* dvh respects the keyboard & browser chrome on iOS */
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  /* home indicator clearance at the very bottom of the scroll container */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ── Background gradient mesh (Apple Prism style) */
+/* ── Background gradient mesh ── */
 .bg-orbs {
   position: fixed; inset: 0;
   pointer-events: none; z-index: 0;
@@ -146,9 +148,61 @@ body::before {
   pointer-events: none; z-index: 9999; opacity: 0.3;
 }
 
+/* ══ DYNAMIC ISLAND BRIDGE ══
+   A full-width strip that fills the gap between the screen edge and the
+   Dynamic Island pill. Because viewport-fit=cover draws content behind the
+   pill, we need the background colour to seamlessly match — this element
+   does that while also serving as a visual anchor.                        */
+.di-bridge {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  /* Exactly as tall as the Dynamic Island safe-area */
+  height: env(safe-area-inset-top, 0px);
+  /* Deep glass tint — same as the tab-bar background so they merge visually */
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  z-index: 200; /* above content, below modals (1000) */
+  pointer-events: none;
+  /* Subtle green glow bleeds in from below — echoes the brand accent */
+  box-shadow: 0 1px 0 rgba(48,209,88,0.10);
+}
+
+/* Live market pulse indicator — rendered in the DI bridge strip,
+   visible in the top-right corner beside the Dynamic Island pill  */
+.di-status-dot {
+  position: fixed;
+  /* nudge it to sit in the visual 'gap' to the right of the DI pill   */
+  top: calc(env(safe-area-inset-top, 0px) * 0.38);
+  right: calc(env(safe-area-inset-right, 0px) + 18px);
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(48,209,88,0.9);
+  z-index: 201;
+  pointer-events: none;
+  animation: pulseStatusDot 2.4s ease-in-out infinite;
+  /* only show when DI inset is meaningful (i.e. on iPhone with DI) */
+  display: none;
+}
+@supports (top: env(safe-area-inset-top)) {
+  .di-status-dot { display: block; }
+}
+@keyframes pulseStatusDot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.75); }
+}
+.di-status-dot.closed { background: var(--red); box-shadow: 0 0 5px rgba(255,69,58,0.7); animation: none; }
+
+/* ══ WRAPPER ══
+   Horizontal padding uses max() to take whichever is larger: the
+   designer's 16 px or the hardware safe-area (matters in landscape).     */
 .wrapper {
   max-width: 980px; margin: 0 auto;
-  padding: 0 16px 80px;
+  padding: 0
+    max(16px, calc(var(--safe-right) + 16px))   /* right  */
+    calc(80px + var(--safe-bottom))              /* bottom — home indicator */
+    max(16px, calc(var(--safe-left)  + 16px));  /* left   */
   position: relative; z-index: 1;
 }
 
@@ -176,9 +230,11 @@ body::before {
     0 0 0 1px rgba(64,203,224,0.03) inset;
 }
 
-/* ══ HEADER ══ */
+/* ══ HEADER ══
+   Top padding = safe-area-inset-top (Dynamic Island height) + designer gap.
+   This pushes the brand below the DI pill.                                */
 .site-header {
-  padding: 32px 0 18px;
+  padding: calc(var(--safe-top) + 16px) 0 18px;
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; flex-wrap: wrap;
 }
@@ -205,16 +261,34 @@ body::before {
   background: var(--fill-4); backdrop-filter: var(--blur);
 }
 
-/* ══ TAB BAR ══ */
+/* ══ TAB BAR ══
+   KEY DYNAMIC ISLAND FIX:
+   • position: sticky keeps it locked once scrolled past the header.
+   • top: 0 places the bar flush with the viewport top edge.
+   • padding-top: calc(safe-area-inset-top + designer-padding) ensures the
+     pill buttons are below the DI regardless of whether the bar has stuck
+     to the top or is still in normal flow.
+   • The tall backdrop colour fills the DI area above the buttons.         */
 .tab-bar {
-  position: sticky; top: 0; z-index: 100;
-  display: flex; gap: 8px;
-  padding: 12px 16px 14px;
-  background: rgba(0,0,0,0.72);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  gap: 8px;
+  /* ↓ This is the critical line — pushes buttons below the DI pill */
+  padding: calc(var(--safe-top) + 8px)
+           max(16px, calc(var(--safe-right) + 16px))
+           14px
+           max(16px, calc(var(--safe-left)  + 16px));
+  background: rgba(0,0,0,0.82);
   backdrop-filter: blur(28px) saturate(200%);
   -webkit-backdrop-filter: blur(28px) saturate(200%);
-  margin: 0 -16px;
+  /* extend the strip behind the hardware pill (negative margin cancels wrapper padding) */
+  margin: 0 calc(-1 * max(16px, calc(var(--safe-right) + 16px)))
+             0 calc(-1 * max(16px, calc(var(--safe-left)  + 16px)));
   border-bottom: 1px solid var(--sep-opaque);
+  /* Subtle green/teal gradient line at bottom mirrors DI status dot */
+  box-shadow: 0 1px 0 rgba(48,209,88,0.08);
 }
 .tab-btn {
   flex: 1;
@@ -228,6 +302,10 @@ body::before {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  /* Minimum tap target — Apple HIG recommends 44 pt */
+  min-height: 44px;
+  /* Prevent text shrink on small screens */
+  white-space: nowrap;
 }
 .tab-btn:hover { color: var(--label); border-color: rgba(235,235,245,0.28); }
 .tab-btn.budget-tab.active {
@@ -261,6 +339,8 @@ body::before {
   background: var(--fill-4); color: var(--label-2);
   cursor: pointer; transition: all 0.2s; white-space: nowrap;
   backdrop-filter: blur(10px);
+  /* Apple HIG: minimum 44pt touch target; pill is narrow so add vertical hit area */
+  min-height: 36px;
 }
 .month-pill:hover { border-color: rgba(235,235,245,0.35); color: var(--label); }
 .month-pill.active {
@@ -310,7 +390,6 @@ body::before {
 .card-value.p { color: var(--teal); }
 .card-sub { font-size: 11px; color: var(--label-3); margin-top: 7px; }
 
-/* Budget edit */
 .overflow-badge {
   display: none; margin-top: 7px;
   font-family: var(--font-m); font-size: 11px; font-weight: 700;
@@ -406,6 +485,8 @@ body::before {
   padding: 11px 13px; outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   box-shadow: inset 0 2px 5px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.025);
+  /* iOS: prevent zoom-on-focus (needs font-size ≥ 16px or this override) */
+  font-size: max(16px, 14px);
 }
 .form-input::placeholder { color: var(--label-4); }
 .form-input:focus, .form-select:focus {
@@ -431,6 +512,8 @@ body::before {
   color: #000; font-family: var(--font-d); font-size: 14px; font-weight: 900;
   padding: 13px; cursor: pointer; transition: all 0.22s; margin-top: 6px;
   box-shadow: 0 4px 22px rgba(48,209,88,0.28); letter-spacing: 0.2px;
+  /* Apple HIG 44pt minimum */
+  min-height: 44px;
 }
 .add-btn:hover { background: #3CE168; box-shadow: 0 6px 28px rgba(48,209,88,0.42); transform: translateY(-1px); }
 .add-btn:active { transform: translateY(0); }
@@ -479,6 +562,7 @@ body::before {
   padding: 5px 13px; border-radius: 20px;
   border: 1px solid var(--sep); background: var(--fill-4);
   color: var(--label-2); cursor: pointer; transition: all 0.15s;
+  min-height: 32px;
 }
 .filter-pill:hover { border-color: rgba(235,235,245,0.35); color: var(--label); }
 .filter-pill.active { background: var(--green); border-color: var(--green); color: #000; font-weight: 900; }
@@ -489,6 +573,8 @@ body::before {
   max-height: 360px; overflow-y: auto;
   scrollbar-width: thin; scrollbar-color: var(--fill-2) transparent;
   padding-right: 2px;
+  /* iOS momentum scrolling */
+  -webkit-overflow-scrolling: touch;
 }
 .entries-list::-webkit-scrollbar { width: 4px; }
 .entries-list::-webkit-scrollbar-thumb { background: var(--fill-2); border-radius: 99px; }
@@ -513,10 +599,11 @@ body::before {
 .entry-amount { font-family: var(--font-m); font-size: 13px; font-weight: 700; color: var(--label); flex-shrink: 0; }
 .entry-actions { display: flex; gap: 5px; flex-shrink: 0; }
 .entry-edit-btn, .entry-del-btn {
-  width: 30px; height: 30px; border: 1px solid var(--sep); border-radius: 9px;
+  width: 36px; height: 36px; border: 1px solid var(--sep); border-radius: 9px;
   background: var(--bg-3); cursor: pointer;
   display: flex; align-items: center; justify-content: center; font-size: 13px;
   transition: all 0.15s; color: var(--label-3);
+  /* Larger tap area on touch devices */
 }
 .entry-edit-btn:hover { background: var(--green-dim); border-color: var(--green); color: var(--green); }
 .entry-del-btn:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
@@ -535,6 +622,7 @@ body::before {
   background: var(--bg-2); border: 1px solid var(--sep);
   border-radius: var(--radius-sm); padding: 11px 15px; cursor: pointer;
   transition: all 0.15s;
+  min-height: 44px;
 }
 .summary-row:hover { border-color: rgba(48,209,88,0.32); background: var(--bg-3); }
 .summary-row.active-m { border-color: rgba(48,209,88,0.42); background: rgba(48,209,88,0.06); }
@@ -548,8 +636,6 @@ body::before {
 /* ══════════════════════════════════════
    INVESTMENT TRACKER
    ══════════════════════════════════════ */
-
-/* Market status bar */
 .market-bar {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
   padding: 12px 18px; border-radius: var(--radius-sm); margin: 16px 0;
@@ -566,16 +652,16 @@ body::before {
 .refresh-btn {
   display: flex; align-items: center; gap: 6px;
   background: rgba(64,203,224,0.13); border: 1px solid rgba(64,203,224,0.35);
-  border-radius: 20px; padding: 6px 15px; cursor: pointer;
+  border-radius: 20px; padding: 8px 15px; cursor: pointer;
   font-family: var(--font-d); font-size: 11px; font-weight: 800; color: var(--teal);
   transition: all 0.2s;
+  min-height: 36px;
 }
 .refresh-btn:hover { background: rgba(64,203,224,0.22); box-shadow: 0 0 14px rgba(64,203,224,0.2); }
 .refresh-btn.spinning .ri { animation: spin 1s linear infinite; }
 @keyframes spin { to{transform:rotate(360deg)} }
 .privacy-note { font-size: 10px; color: var(--label-3); display: flex; align-items: center; gap: 5px; }
 
-/* Inv summary cards */
 .inv-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
 @media(max-width:720px){ .inv-cards{grid-template-columns:repeat(2,1fr);} }
 @media(max-width:400px){ .inv-cards{grid-template-columns:1fr;} }
@@ -594,11 +680,12 @@ body::before {
 .search-input {
   flex: 1; min-width: 160px;
   background: var(--bg-2); border: 1px solid var(--sep-opaque);
-  border-radius: var(--radius-sm); color: var(--label); font-family: var(--font-b); font-size: 13px;
+  border-radius: var(--radius-sm); color: var(--label); font-family: var(--font-b); font-size: 14px;
   padding: 10px 13px 10px 36px; outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none'%3E%3Ccircle cx='6' cy='6' r='5' stroke='%23636366' stroke-width='1.5'/%3E%3Cpath d='M10 10l3 3' stroke='%23636366' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: 13px center;
+  font-size: max(16px, 13px); /* prevent iOS auto-zoom */
 }
 .search-input::placeholder { color: var(--label-4); }
 .search-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(64,203,224,0.16); }
@@ -609,10 +696,11 @@ body::before {
   border-radius: var(--radius-sm); color: var(--label-2);
   font-family: var(--font-d); font-size: 11px; font-weight: 800;
   padding: 10px 15px; cursor: pointer; transition: all 0.15s;
+  min-height: 44px;
 }
 .csv-btn:hover { border-color: rgba(48,209,88,0.4); color: var(--green); }
 
-.table-wrap { overflow-x: auto; border-radius: var(--radius-sm); margin-top: 6px; }
+.table-wrap { overflow-x: auto; border-radius: var(--radius-sm); margin-top: 6px; -webkit-overflow-scrolling: touch; }
 .h-table { width: 100%; border-collapse: collapse; min-width: 720px; }
 .h-table th {
   font-family: var(--font-d); font-size: 10px; font-weight: 800; letter-spacing: 1px;
@@ -639,7 +727,7 @@ body::before {
 .td-ret-neg { color: var(--red); font-family: var(--font-m); font-size: 12px; }
 .td-actions { display: flex; gap: 5px; }
 .t-edit-btn, .t-del-btn {
-  width: 29px; height: 29px; border: 1px solid var(--sep); border-radius: 8px;
+  width: 33px; height: 33px; border: 1px solid var(--sep); border-radius: 8px;
   background: var(--bg-2); cursor: pointer;
   display: flex; align-items: center; justify-content: center; font-size: 12px;
   transition: all 0.15s; color: var(--label-3);
@@ -694,23 +782,51 @@ body::before {
 .sip-status.paused { background: rgba(255,159,10,0.12); color: var(--orange); border: 1px solid rgba(255,159,10,0.3); }
 .sip-empty { font-size: 12px; color: var(--label-3); text-align: center; padding: 22px 0; font-family: var(--font-d); }
 
-/* ══ MODALS ══ */
+/* ══ MODALS ══
+   Modals must clear both top (DI) and bottom (home indicator) safe areas.  */
 .modal-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px;
+  z-index: 1000;
+  display: flex; align-items: flex-end; justify-content: center;
+  /* On iPhone, sheet-from-bottom feels most native */
+  padding: var(--safe-top) 0 var(--safe-bottom) 0;
   opacity: 0; pointer-events: none; transition: opacity 0.22s;
+}
+/* On larger screens (not phone), centre the modal */
+@media (min-height: 700px) and (min-width: 500px) {
+  .modal-backdrop { align-items: center; padding: 16px; }
 }
 .modal-backdrop.open { opacity: 1; pointer-events: all; }
 .modal {
-  background: rgba(18,14,28,0.94);
+  background: rgba(18,14,28,0.96);
   backdrop-filter: blur(32px) saturate(170%);
   -webkit-backdrop-filter: blur(32px) saturate(170%);
   border: 1px solid rgba(64,203,224,0.20);
-  border-radius: 22px; padding: 28px; width: 100%; max-width: 440px;
-  box-shadow: 0 28px 80px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.055);
-  transform: translateY(16px) scale(0.97);
-  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  /* Full-width sheet on mobile, capped on desktop */
+  border-radius: 22px 22px 0 0;
+  padding: 28px 24px calc(16px + var(--safe-bottom)) 24px;
+  width: 100%; max-width: 440px;
+  box-shadow: 0 -8px 60px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.055);
+  transform: translateY(32px);
+  transition: transform 0.35s cubic-bezier(0.34,1.46,0.64,1);
+  /* Sheet drag handle */
+  overflow: hidden;
+}
+.modal::before {
+  content: '';
+  display: block; width: 36px; height: 4px;
+  background: rgba(235,235,245,0.22); border-radius: 99px;
+  margin: -12px auto 20px auto;
+}
+@media (min-height: 700px) and (min-width: 500px) {
+  .modal {
+    border-radius: 22px;
+    padding: 28px;
+    transform: translateY(16px) scale(0.97);
+  }
+  .modal::before { display: none; }
 }
 .modal-backdrop.open .modal { transform: translateY(0) scale(1); }
 .modal-title {
@@ -721,8 +837,9 @@ body::before {
 .modal-save {
   flex: 1; background: var(--teal); border: none; border-radius: var(--radius-sm);
   color: #000; font-family: var(--font-d); font-size: 14px; font-weight: 900;
-  padding: 12px; cursor: pointer; transition: all 0.15s;
+  padding: 14px; cursor: pointer; transition: all 0.15s;
   box-shadow: 0 4px 18px rgba(64,203,224,0.30);
+  min-height: 50px;
 }
 .modal-save:hover { background: #5BD9EE; }
 .modal-save.green-save { background: var(--green); color: #000; box-shadow: 0 4px 18px rgba(48,209,88,0.3); }
@@ -731,13 +848,18 @@ body::before {
   flex: 1; background: var(--bg-2); border: 1px solid var(--sep);
   border-radius: var(--radius-sm); color: var(--label-2);
   font-family: var(--font-d); font-size: 14px; font-weight: 800;
-  padding: 12px; cursor: pointer; transition: all 0.15s;
+  padding: 14px; cursor: pointer; transition: all 0.15s;
+  min-height: 50px;
 }
 .modal-cancel:hover { color: var(--label); border-color: rgba(235,235,245,0.32); }
 
-/* ══ TOAST ══ */
+/* ══ TOAST ══
+   Sits above the home indicator.
+   calc(26px + safe-bottom) ensures it never overlaps the swipe bar.       */
 .toast {
-  position: fixed; bottom: 26px; left: 50%;
+  position: fixed;
+  bottom: calc(26px + var(--safe-bottom));
+  left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: rgba(18,18,20,0.92);
   backdrop-filter: blur(22px); border: 1px solid var(--sep);
@@ -746,6 +868,8 @@ body::before {
   z-index: 2000; opacity: 0;
   transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
   white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  /* Don't let it be wider than the screen minus safe areas */
+  max-width: calc(100vw - max(32px, calc(var(--safe-left) + var(--safe-right) + 32px)));
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -754,7 +878,6 @@ body::before {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--fill-2); border-radius: 99px; }
 
-/* Inv two-col */
 .inv-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 @media(max-width:720px){ .inv-two-col{grid-template-columns:1fr;} }
 
@@ -762,6 +885,14 @@ body::before {
 </style>
 </head>
 <body>
+
+<!-- ══ DYNAMIC ISLAND BRIDGE LAYER ══
+     Fills the exact hardware cutout zone above content.
+     The .di-status-dot mirrors the market open/closed state in the
+     narrow gap to the right of the pill — a subtle hardware integration.  -->
+<div class="di-bridge"></div>
+<div class="di-status-dot closed" id="diStatusDot"></div>
+
 <div class="bg-orbs">
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
@@ -782,7 +913,7 @@ body::before {
   <div class="fy-badge">FY 2026</div>
 </header>
 
-<!-- TAB BAR -->
+<!-- TAB BAR — sticky, DI-aware -->
 <div class="tab-bar">
   <button class="tab-btn budget-tab active" id="tabBudget" onclick="switchTab('budget')">📅 Budget Tracker</button>
   <button class="tab-btn inv-tab" id="tabInv" onclick="switchTab('investment')">📈 Investment Tracker</button>
@@ -834,7 +965,7 @@ body::before {
       <div class="panel-title"><div class="dot"></div>Add Entry</div>
       <div class="form-group">
         <label class="form-label">Amount (₹)</label>
-        <input type="number" class="form-input" id="amountInput" placeholder="0.00" step="0.01" min="0"/>
+        <input type="number" class="form-input" id="amountInput" placeholder="0.00" step="0.01" min="0" inputmode="decimal"/>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -852,7 +983,7 @@ body::before {
       </div>
       <div class="form-group">
         <label class="form-label">Reason</label>
-        <input type="text" class="form-input" id="reasonInput" placeholder="What did you spend on?"/>
+        <input type="text" class="form-input" id="reasonInput" placeholder="What did you spend on?" autocomplete="off" autocorrect="off"/>
       </div>
       <button class="add-btn" id="addEntryBtn">+ Add Entry</button>
     </div>
@@ -899,7 +1030,7 @@ body::before {
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <div class="privacy-note">🔒 Prices fetched directly from public APIs — no tracking</div>
+      <div class="privacy-note">🔒 Prices fetched directly from public APIs</div>
       <button class="refresh-btn" id="refreshPricesBtn" onclick="fetchAllPrices(true)">
         <span class="ri" id="refreshIcon">↻</span> Refresh Prices
       </button>
@@ -944,7 +1075,7 @@ body::before {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Name</label>
-          <input type="text" class="form-input p-focus" id="hNameInput" placeholder="Fund / Stock name"/>
+          <input type="text" class="form-input p-focus" id="hNameInput" placeholder="Fund / Stock name" autocomplete="off"/>
         </div>
         <div class="form-group">
           <label class="form-label">Type</label>
@@ -958,17 +1089,17 @@ body::before {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Invested (₹)</label>
-          <input type="number" class="form-input p-focus" id="hInvestedInput" placeholder="0.00" step="0.01"/>
+          <input type="number" class="form-input p-focus" id="hInvestedInput" placeholder="0.00" step="0.01" inputmode="decimal"/>
         </div>
         <div class="form-group">
           <label class="form-label">Current Value (₹)</label>
-          <input type="number" class="form-input p-focus" id="hCurrentInput" placeholder="0.00" step="0.01"/>
+          <input type="number" class="form-input p-focus" id="hCurrentInput" placeholder="0.00" step="0.01" inputmode="decimal"/>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Units / Shares</label>
-          <input type="number" class="form-input p-focus" id="hUnitsInput" placeholder="0" step="any"/>
+          <input type="number" class="form-input p-focus" id="hUnitsInput" placeholder="0" step="any" inputmode="decimal"/>
         </div>
         <div class="form-group">
           <label class="form-label">Start Date</label>
@@ -977,7 +1108,7 @@ body::before {
       </div>
       <div class="form-group">
         <label class="form-label">Ticker / Scheme Code <span style="opacity:0.45">(for live price)</span></label>
-        <input type="text" class="form-input p-focus" id="hTickerInput" placeholder="e.g. RELIANCE or AMFI code 120503"/>
+        <input type="text" class="form-input p-focus" id="hTickerInput" placeholder="e.g. RELIANCE or AMFI code 120503" autocomplete="off" autocorrect="off" autocapitalize="characters"/>
         <div class="ticker-hint">• Stocks/ETF: NSE symbol (e.g. RELIANCE, NIFTYBEES) &nbsp;• MF: AMFI scheme code &nbsp;• SGB: NSE symbol (e.g. SGBNOV28)</div>
       </div>
       <button class="add-btn purple-btn" onclick="addHolding()">+ Add Holding</button>
@@ -990,8 +1121,8 @@ body::before {
       <button class="csv-btn" onclick="exportCSV()">⬇ Export CSV</button>
     </div>
     <div class="holdings-controls">
-      <input type="text" class="search-input" id="holdingSearch" placeholder="Search holdings…" oninput="renderHoldings()"/>
-      <div class="entries-filter" id="typeFilter" style="margin:0;flex-wrap:nowrap;overflow-x:auto;"></div>
+      <input type="text" class="search-input" id="holdingSearch" placeholder="Search holdings…" oninput="renderHoldings()" autocomplete="off"/>
+      <div class="entries-filter" id="typeFilter" style="margin:0;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;"></div>
     </div>
     <div class="table-wrap">
       <table class="h-table" id="holdingsTable">
@@ -1038,8 +1169,8 @@ body::before {
 <div class="modal-backdrop" id="editModalBackdrop">
   <div class="modal">
     <div class="modal-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px rgba(255,159,10,0.7);flex-shrink:0"></div>Edit Entry</div>
-    <div class="form-group"><label class="form-label">Amount (₹)</label><input type="number" class="form-input" id="editAmount" step="0.01" min="0"/></div>
-    <div class="form-group"><label class="form-label">Reason</label><input type="text" class="form-input" id="editReason"/></div>
+    <div class="form-group"><label class="form-label">Amount (₹)</label><input type="number" class="form-input" id="editAmount" step="0.01" min="0" inputmode="decimal"/></div>
+    <div class="form-group"><label class="form-label">Reason</label><input type="text" class="form-input" id="editReason" autocomplete="off"/></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Category</label>
         <select class="form-select" id="editCategory">
@@ -1060,7 +1191,7 @@ body::before {
   <div class="modal">
     <div class="modal-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px rgba(64,203,224,0.7);flex-shrink:0"></div>Edit Holding</div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input p-focus" id="ehName"/></div>
+      <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input p-focus" id="ehName" autocomplete="off"/></div>
       <div class="form-group"><label class="form-label">Type</label>
         <select class="form-select p-focus" id="ehType">
           <option>Mutual Fund</option><option>Stocks</option><option>ETF</option><option>Gold</option><option>FD/RD</option><option>PPF/EPF</option><option>Crypto</option><option>Other</option>
@@ -1068,14 +1199,14 @@ body::before {
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Invested (₹)</label><input type="number" class="form-input p-focus" id="ehInvested" step="0.01"/></div>
-      <div class="form-group"><label class="form-label">Current Value (₹)</label><input type="number" class="form-input p-focus" id="ehCurrent" step="0.01"/></div>
+      <div class="form-group"><label class="form-label">Invested (₹)</label><input type="number" class="form-input p-focus" id="ehInvested" step="0.01" inputmode="decimal"/></div>
+      <div class="form-group"><label class="form-label">Current Value (₹)</label><input type="number" class="form-input p-focus" id="ehCurrent" step="0.01" inputmode="decimal"/></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Units</label><input type="number" class="form-input p-focus" id="ehUnits" step="any"/></div>
+      <div class="form-group"><label class="form-label">Units</label><input type="number" class="form-input p-focus" id="ehUnits" step="any" inputmode="decimal"/></div>
       <div class="form-group"><label class="form-label">Start Date</label><input type="date" class="form-input p-focus" id="ehDate"/></div>
     </div>
-    <div class="form-group"><label class="form-label">Ticker / Scheme Code</label><input type="text" class="form-input p-focus" id="ehTicker"/></div>
+    <div class="form-group"><label class="form-label">Ticker / Scheme Code</label><input type="text" class="form-input p-focus" id="ehTicker" autocomplete="off" autocapitalize="characters"/></div>
     <div class="modal-actions">
       <button class="modal-save" onclick="saveHoldingEdit()">Save Changes</button>
       <button class="modal-cancel" onclick="closeModal('holdingModal')">Cancel</button>
@@ -1088,7 +1219,7 @@ body::before {
   <div class="modal">
     <div class="modal-title"><div style="width:8px;height:8px;border-radius:50%;background:#FF9F0A;box-shadow:0 0 8px rgba(255,159,10,0.7);flex-shrink:0"></div><span id="goalModalTitle">Add Financial Goal</span></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Goal Name</label><input type="text" class="form-input p-focus" id="gName" placeholder="e.g. Emergency Fund"/></div>
+      <div class="form-group"><label class="form-label">Goal Name</label><input type="text" class="form-input p-focus" id="gName" placeholder="e.g. Emergency Fund" autocomplete="off"/></div>
       <div class="form-group"><label class="form-label">Category</label>
         <select class="form-select p-focus" id="gCategory">
           <option>Emergency Fund</option><option>House</option><option>Car</option><option>Retirement</option><option>Education</option><option>Travel</option><option>Wedding</option><option>Other</option>
@@ -1096,10 +1227,10 @@ body::before {
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Target Amount (₹)</label><input type="number" class="form-input p-focus" id="gTarget" step="0.01" min="0"/></div>
-      <div class="form-group"><label class="form-label">Saved So Far (₹)</label><input type="number" class="form-input p-focus" id="gSaved" step="0.01" min="0" placeholder="0"/></div>
+      <div class="form-group"><label class="form-label">Target Amount (₹)</label><input type="number" class="form-input p-focus" id="gTarget" step="0.01" min="0" inputmode="decimal"/></div>
+      <div class="form-group"><label class="form-label">Saved So Far (₹)</label><input type="number" class="form-input p-focus" id="gSaved" step="0.01" min="0" placeholder="0" inputmode="decimal"/></div>
     </div>
-    <div class="form-group"><label class="form-label">Target Year</label><input type="number" class="form-input p-focus" id="gYear" placeholder="2030" min="2026"/></div>
+    <div class="form-group"><label class="form-label">Target Year</label><input type="number" class="form-input p-focus" id="gYear" placeholder="2030" min="2026" inputmode="numeric"/></div>
     <div class="modal-actions">
       <button class="modal-save" onclick="saveGoal()">Save Goal</button>
       <button class="modal-cancel" onclick="closeModal('goalModal')">Cancel</button>
@@ -1111,10 +1242,10 @@ body::before {
 <div class="modal-backdrop" id="sipModal">
   <div class="modal">
     <div class="modal-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px rgba(64,203,224,0.7);flex-shrink:0"></div><span id="sipModalTitle">Add SIP</span></div>
-    <div class="form-group"><label class="form-label">Fund / Stock Name</label><input type="text" class="form-input p-focus" id="sipName" placeholder="e.g. Parag Parikh Flexi Cap"/></div>
+    <div class="form-group"><label class="form-label">Fund / Stock Name</label><input type="text" class="form-input p-focus" id="sipName" placeholder="e.g. Parag Parikh Flexi Cap" autocomplete="off"/></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Monthly Amount (₹)</label><input type="number" class="form-input p-focus" id="sipAmount" step="0.01" min="0"/></div>
-      <div class="form-group"><label class="form-label">Day of Month</label><input type="number" class="form-input p-focus" id="sipDay" min="1" max="31" placeholder="5"/></div>
+      <div class="form-group"><label class="form-label">Monthly Amount (₹)</label><input type="number" class="form-input p-focus" id="sipAmount" step="0.01" min="0" inputmode="decimal"/></div>
+      <div class="form-group"><label class="form-label">Day of Month</label><input type="number" class="form-input p-focus" id="sipDay" min="1" max="31" placeholder="5" inputmode="numeric"/></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Status</label>
@@ -1137,105 +1268,75 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 const YEAR_KEY = '2026';
 const DEFAULT_BUDGET = 68000;
 
-// Apple iOS System Colors (matching CSS variables)
 const CAT_COLORS = {
-  Food:'#FF9F0A',       // orange
-  Travel:'#0A84FF',       // blue
-  Shopping:'#FF375F',     // pink
-  Entertainment:'#40CBE0',// teal (was purple)
-  Health:'#30D158',       // green
-  Utilities:'#5E5CE6',    // indigo
-  Investments:'#FFD60A',  // yellow
-  Rent:'#FF453A',         // red
-  Other:'#636366'         // gray
+  Food:'#FF9F0A', Travel:'#0A84FF', Shopping:'#FF375F',
+  Entertainment:'#40CBE0', Health:'#30D158', Utilities:'#5E5CE6',
+  Investments:'#FFD60A', Rent:'#FF453A', Other:'#636366'
 };
 const ASSET_COLORS = {
-  'Mutual Fund':'#40CBE0', // teal (was purple)
-  'Stocks':'#0A84FF',      // blue
-  'ETF':'#30D158',         // green
-  'Gold':'#FFD60A',        // yellow
-  'FD/RD':'#FF9F0A',       // orange
-  'PPF/EPF':'#FF375F',     // pink
-  'Crypto':'#5E5CE6',      // indigo
-  'Other':'#636366'        // gray
+  'Mutual Fund':'#40CBE0','Stocks':'#0A84FF','ETF':'#30D158',
+  'Gold':'#FFD60A','FD/RD':'#FF9F0A','PPF/EPF':'#FF375F',
+  'Crypto':'#5E5CE6','Other':'#636366'
 };
 const GOAL_ICONS = {
   'Emergency Fund':'🛡️','House':'🏠','Car':'🚗','Retirement':'🌴',
   'Education':'🎓','Travel':'✈️','Wedding':'💍','Other':'🎯'
 };
-const ord = n => {
-  const s=['th','st','nd','rd'], v=n%100;
-  return n+(s[(v-20)%10]||s[v]||s[0]);
-};
+const ord = n => { const s=['th','st','nd','rd'],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
 
 // ════════════ BUDGET STATE ════════════
-let entries = [];
-let budgets = {};
-let selectedMonth = MONTHS[new Date().getMonth()];
-let chartMonthView = selectedMonth;
-let filterCat = 'All';
-let editingId = null;
-let donutChart = null;
-let budgetEditing = false;
+let entries=[], budgets={}, selectedMonth=MONTHS[new Date().getMonth()];
+let chartMonthView=selectedMonth, filterCat='All', editingId=null;
+let donutChart=null, budgetEditing=false;
 
 // ════════════ INVESTMENT STATE ════════════
-let holdings = [];
-let goals = [];
-let sips = [];
-let hSortCol = 'name';
-let hSortDir = 'asc';
-let hFilterType = 'All';
-let editingHoldingId = null;
-let editingGoalId = null;
-let editingSIPId = null;
-let allocChart = null;
-let lastPriceFetch = null;
+let holdings=[], goals=[], sips=[];
+let hSortCol='name', hSortDir='asc', hFilterType='All';
+let editingHoldingId=null, editingGoalId=null, editingSIPId=null;
+let allocChart=null, lastPriceFetch=null;
 
 // ════════════ STORAGE ════════════
 function save() {
-  localStorage.setItem('rt26_entries', JSON.stringify(entries));
-  localStorage.setItem('rt26_budgets', JSON.stringify(budgets));
+  localStorage.setItem('rt26_entries',JSON.stringify(entries));
+  localStorage.setItem('rt26_budgets',JSON.stringify(budgets));
 }
 function saveInv() {
-  localStorage.setItem('rt26_holdings', JSON.stringify(holdings));
-  localStorage.setItem('rt26_goals', JSON.stringify(goals));
-  localStorage.setItem('rt26_sips', JSON.stringify(sips));
+  localStorage.setItem('rt26_holdings',JSON.stringify(holdings));
+  localStorage.setItem('rt26_goals',JSON.stringify(goals));
+  localStorage.setItem('rt26_sips',JSON.stringify(sips));
 }
 function load() {
   try {
-    const e=localStorage.getItem('rt26_entries'), b=localStorage.getItem('rt26_budgets'),
-          h=localStorage.getItem('rt26_holdings'), g=localStorage.getItem('rt26_goals'),
-          s=localStorage.getItem('rt26_sips'), lf=localStorage.getItem('rt26_lastFetch');
-    if(e) entries=JSON.parse(e);
-    if(b) budgets=JSON.parse(b);
-    if(h) holdings=JSON.parse(h);
-    if(g) goals=JSON.parse(g);
-    if(s) sips=JSON.parse(s);
-    if(lf) lastPriceFetch=lf;
-  } catch(err) {}
-  MONTHS.forEach(m => { if(!budgets[m]) budgets[m]=DEFAULT_BUDGET; });
+    const e=localStorage.getItem('rt26_entries'),b=localStorage.getItem('rt26_budgets'),
+          h=localStorage.getItem('rt26_holdings'),g=localStorage.getItem('rt26_goals'),
+          s=localStorage.getItem('rt26_sips'),lf=localStorage.getItem('rt26_lastFetch');
+    if(e) entries=JSON.parse(e); if(b) budgets=JSON.parse(b);
+    if(h) holdings=JSON.parse(h); if(g) goals=JSON.parse(g);
+    if(s) sips=JSON.parse(s); if(lf) lastPriceFetch=lf;
+  } catch(err){}
+  MONTHS.forEach(m=>{ if(!budgets[m]) budgets[m]=DEFAULT_BUDGET; });
   if(!budgets[YEAR_KEY]) budgets[YEAR_KEY]=DEFAULT_BUDGET*12;
 }
 
 // ════════════ TAB ════════════
-let activeTab = 'budget';
+let activeTab='budget';
 function switchTab(tab) {
-  activeTab = tab;
-  document.getElementById('budgetPage').classList.toggle('active', tab==='budget');
-  document.getElementById('investmentPage').classList.toggle('active', tab==='investment');
-  document.getElementById('tabBudget').classList.toggle('active', tab==='budget');
-  document.getElementById('tabInv').classList.toggle('active', tab==='investment');
-  if(tab==='investment') { renderInvestment(); checkMarketStatus(); }
+  activeTab=tab;
+  document.getElementById('budgetPage').classList.toggle('active',tab==='budget');
+  document.getElementById('investmentPage').classList.toggle('active',tab==='investment');
+  document.getElementById('tabBudget').classList.toggle('active',tab==='budget');
+  document.getElementById('tabInv').classList.toggle('active',tab==='investment');
+  if(tab==='investment'){ renderInvestment(); checkMarketStatus(); }
 }
 
 // ════════════ HELPERS ════════════
-function fmt(n) { return '₹'+Math.abs(n).toLocaleString('en-IN',{maximumFractionDigits:2}); }
-function fmtSigned(n) { return (n>=0?'+':'-')+'₹'+Math.abs(n).toLocaleString('en-IN',{maximumFractionDigits:2}); }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function uid() { return 'id_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
-function getEntriesForMonth(m) { return m===YEAR_KEY ? entries : entries.filter(e=>e.month===m); }
-function getTotalSpent(m) { return getEntriesForMonth(m).reduce((s,e)=>s+e.amount,0); }
-function getBudget(m) { return m===YEAR_KEY ? (budgets[YEAR_KEY]||DEFAULT_BUDGET*12) : (budgets[m]||DEFAULT_BUDGET); }
+function fmt(n){ return '₹'+Math.abs(n).toLocaleString('en-IN',{maximumFractionDigits:2}); }
+function fmtSigned(n){ return (n>=0?'+':'-')+'₹'+Math.abs(n).toLocaleString('en-IN',{maximumFractionDigits:2}); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function uid(){ return 'id_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+function getEntriesForMonth(m){ return m===YEAR_KEY?entries:entries.filter(e=>e.month===m); }
+function getTotalSpent(m){ return getEntriesForMonth(m).reduce((s,e)=>s+e.amount,0); }
+function getBudget(m){ return m===YEAR_KEY?(budgets[YEAR_KEY]||DEFAULT_BUDGET*12):(budgets[m]||DEFAULT_BUDGET); }
 
 // ════════════ MONTH BAR ════════════
 function buildMonthBar() {
@@ -1253,9 +1354,8 @@ function buildMonthBar() {
     bar.appendChild(p);
   });
 }
-function scrollPill(el) { el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}); }
+function scrollPill(el){ el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}); }
 
-// ════════════ MONTH SELECTS ════════════
 function populateMonthSelects() {
   ['monthInput','editMonth'].forEach(id=>{
     const sel=document.getElementById(id); if(!sel) return;
@@ -1268,131 +1368,78 @@ function populateMonthSelects() {
   if(chartMonthView===YEAR_KEY) cs.value=YEAR_KEY; else cs.value=chartMonthView;
 }
 
-// ════════════ BUDGET CARDS ════════════
 function renderCards() {
-  const budget=getBudget(selectedMonth), spent=getTotalSpent(selectedMonth);
-  const balance=budget-spent;
-  const pct=budget>0?(spent/budget)*100:0;
-
+  const budget=getBudget(selectedMonth),spent=getTotalSpent(selectedMonth);
+  const balance=budget-spent, pct=budget>0?(spent/budget)*100:0;
   document.getElementById('cardBudget').textContent=fmt(budget);
   document.getElementById('cardSpent').textContent=fmt(spent);
   document.getElementById('cardSpentSub').textContent=getEntriesForMonth(selectedMonth).length+' transactions';
-
   const balEl=document.getElementById('cardBalance');
   balEl.textContent=fmt(Math.abs(balance));
   balEl.className='card-value '+(balance<0?'r':balance<budget*0.2?'a':'g');
-  const pctRem=balance>=0?Math.round(100-Math.min(pct,100)):0;
-  document.getElementById('cardBalanceSub').textContent=pctRem+'% remaining';
-
-  const fill=document.getElementById('progressFill'), pctEl=document.getElementById('progressPct');
-  const clampedPct=Math.min(pct,100);
-  fill.style.width=clampedPct+'%';
+  document.getElementById('cardBalanceSub').textContent=(balance>=0?Math.round(100-Math.min(pct,100)):0)+'% remaining';
+  const fill=document.getElementById('progressFill'),pctEl=document.getElementById('progressPct');
+  fill.style.width=Math.min(pct,100)+'%';
   const color=pct>=90?'var(--red)':pct>=65?'var(--orange)':'var(--green)';
-  fill.style.background=color; pctEl.style.color=color;
-  pctEl.textContent=pct.toFixed(1)+'%';
-
+  fill.style.background=color; pctEl.style.color=color; pctEl.textContent=pct.toFixed(1)+'%';
   const ob=document.getElementById('overflowBadge');
-  if(pct>100) {
-    ob.style.display='block';
-    ob.textContent='▲ '+(pct-100).toFixed(1)+'% over budget — Overspent by '+fmt(Math.abs(balance));
-  } else {
-    ob.style.display='none';
-  }
+  if(pct>100){ ob.style.display='block'; ob.textContent='▲ '+(pct-100).toFixed(1)+'% over budget — Overspent by '+fmt(Math.abs(balance)); }
+  else ob.style.display='none';
 }
 
-// ════════════ ENTRIES ════════════
 function renderEntries() {
-  const list=document.getElementById('entriesList'), countEl=document.getElementById('entriesCount'), filterEl=document.getElementById('entriesFilter');
+  const list=document.getElementById('entriesList'),countEl=document.getElementById('entriesCount'),filterEl=document.getElementById('entriesFilter');
   let source=getEntriesForMonth(selectedMonth);
   const cats=['All',...new Set(source.map(e=>e.category))];
   filterEl.innerHTML='';
-  cats.forEach(c=>{
-    const p=document.createElement('button');
-    p.className='filter-pill'+(filterCat===c?' active':'');
-    p.textContent=c;
-    p.onclick=()=>{ filterCat=c; renderEntries(); };
-    filterEl.appendChild(p);
-  });
+  cats.forEach(c=>{ const p=document.createElement('button'); p.className='filter-pill'+(filterCat===c?' active':''); p.textContent=c; p.onclick=()=>{ filterCat=c; renderEntries(); }; filterEl.appendChild(p); });
   if(!cats.includes(filterCat)) filterCat='All';
-  let filtered=filterCat==='All'?source:source.filter(e=>e.category===filterCat);
-  filtered=[...filtered].reverse();
+  let filtered=(filterCat==='All'?source:source.filter(e=>e.category===filterCat)).slice().reverse();
   countEl.textContent=filtered.length+' entr'+(filtered.length===1?'y':'ies');
-  if(!filtered.length) {
-    list.innerHTML=`<div class="entries-empty"><div class="ei">💸</div>${source.length===0?'No entries yet. Add your first transaction above.':'No entries in this category.'}</div>`;
-    return;
-  }
+  if(!filtered.length){ list.innerHTML=`<div class="entries-empty"><div class="ei">💸</div>${source.length===0?'No entries yet. Add your first transaction above.':'No entries in this category.'}</div>`; return; }
   list.innerHTML='';
   filtered.forEach(entry=>{
     const color=CAT_COLORS[entry.category]||CAT_COLORS.Other;
     const row=document.createElement('div'); row.className='entry-row';
-    row.innerHTML=`
-      <div class="entry-cat-dot" style="background:${color};box-shadow:0 0 5px ${color}55"></div>
-      <div class="entry-info">
-        <div class="entry-reason">${esc(entry.reason)}</div>
-        <div class="entry-meta"><span>${entry.category}</span><span>·</span><span>${entry.month}</span></div>
-      </div>
-      <div class="entry-amount">${fmt(entry.amount)}</div>
-      <div class="entry-actions">
-        <button class="entry-edit-btn" onclick="openEdit('${entry.id}')">✎</button>
-        <button class="entry-del-btn" onclick="deleteEntry('${entry.id}')">✕</button>
-      </div>`;
+    row.innerHTML=`<div class="entry-cat-dot" style="background:${color};box-shadow:0 0 5px ${color}55"></div><div class="entry-info"><div class="entry-reason">${esc(entry.reason)}</div><div class="entry-meta"><span>${entry.category}</span><span>·</span><span>${entry.month}</span></div></div><div class="entry-amount">${fmt(entry.amount)}</div><div class="entry-actions"><button class="entry-edit-btn" onclick="openEdit('${entry.id}')">✎</button><button class="entry-del-btn" onclick="deleteEntry('${entry.id}')">✕</button></div>`;
     list.appendChild(row);
   });
 }
 
-// ════════════ BUDGET CHART ════════════
 function renderChart() {
   const source=getEntriesForMonth(chartMonthView);
-  const canvas=document.getElementById('donutChart'), empty=document.getElementById('chartEmpty');
-  if(!source.length) { canvas.style.display='none'; empty.style.display='block'; if(donutChart){donutChart.destroy();donutChart=null;} return; }
+  const canvas=document.getElementById('donutChart'),empty=document.getElementById('chartEmpty');
+  if(!source.length){ canvas.style.display='none'; empty.style.display='block'; if(donutChart){donutChart.destroy();donutChart=null;} return; }
   const catTotals={};
   source.forEach(e=>{ catTotals[e.category]=(catTotals[e.category]||0)+e.amount; });
-  const labels=Object.keys(catTotals), data=labels.map(l=>catTotals[l]);
-  const colors=labels.map(l=>CAT_COLORS[l]||CAT_COLORS.Other);
+  const labels=Object.keys(catTotals),data=labels.map(l=>catTotals[l]),colors=labels.map(l=>CAT_COLORS[l]||CAT_COLORS.Other);
   canvas.style.display='block'; empty.style.display='none';
   if(donutChart){donutChart.destroy();donutChart=null;}
-  donutChart=new Chart(canvas,{
-    type:'doughnut',
-    data:{ labels, datasets:[{ data, backgroundColor:colors.map(c=>c+'bb'), borderColor:colors, borderWidth:1.5, hoverOffset:6 }] },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
-      plugins:{ legend:{ position:'right', labels:{ color:'rgba(235,235,245,0.55)', font:{family:'Nunito',size:11}, padding:10, boxWidth:8, boxHeight:8 } },
-        tooltip:{ backgroundColor:'#1C1C1E', borderColor:'rgba(84,84,88,0.65)', borderWidth:1,
-          titleColor:'#FFFFFF', bodyColor:'rgba(235,235,245,0.6)', padding:12,
-          callbacks:{ label:ctx=>` ${ctx.label}: ₹${ctx.parsed.toLocaleString('en-IN')}` } } } }
-  });
+  donutChart=new Chart(canvas,{ type:'doughnut', data:{ labels, datasets:[{ data, backgroundColor:colors.map(c=>c+'bb'), borderColor:colors, borderWidth:1.5, hoverOffset:6 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{ legend:{ position:'right', labels:{ color:'rgba(235,235,245,0.55)', font:{family:'Nunito',size:11}, padding:10, boxWidth:8, boxHeight:8 } }, tooltip:{ backgroundColor:'#1C1C1E', borderColor:'rgba(84,84,88,0.65)', borderWidth:1, titleColor:'#FFFFFF', bodyColor:'rgba(235,235,245,0.6)', padding:12, callbacks:{ label:ctx=>` ${ctx.label}: ₹${ctx.parsed.toLocaleString('en-IN')}` } } } } });
 }
 
-// ════════════ MONTHLY SUMMARY ════════════
 function renderSummary() {
   const grid=document.getElementById('summaryGrid'); grid.innerHTML='';
   const monthData=MONTHS.map(m=>({m,spent:getTotalSpent(m),count:getEntriesForMonth(m).length})).filter(d=>d.count>0);
-  const yearlySpent=getTotalSpent(YEAR_KEY), yearlyCount=entries.length;
+  const yearlySpent=getTotalSpent(YEAR_KEY),yearlyCount=entries.length;
   if(!monthData.length&&!yearlyCount){ grid.innerHTML='<div class="summary-empty">No spending data yet.</div>'; return; }
   const maxSpent=Math.max(...monthData.map(d=>d.spent),1);
   if(yearlyCount>0){
-    const row=document.createElement('div');
-    row.className='summary-row'+(selectedMonth===YEAR_KEY?' active-m':'');
-    row.style.borderColor='rgba(255,159,10,0.28)';
+    const row=document.createElement('div'); row.className='summary-row'+(selectedMonth===YEAR_KEY?' active-m':''); row.style.borderColor='rgba(255,159,10,0.28)';
     row.innerHTML=`<div class="summary-mn" style="color:var(--orange)">All 2026</div><div class="summary-bw"><div class="summary-bf" style="width:100%;background:var(--orange)"></div></div><div class="summary-amt" style="color:var(--orange)">${fmt(yearlySpent)}</div><div class="summary-cnt">${yearlyCount} entries</div>`;
-    row.onclick=()=>{ selectedMonth=YEAR_KEY; render(); };
-    grid.appendChild(row);
+    row.onclick=()=>{ selectedMonth=YEAR_KEY; render(); }; grid.appendChild(row);
   }
   monthData.forEach(d=>{
     const pct=Math.min((d.spent/maxSpent)*100,100);
-    const row=document.createElement('div');
-    row.className='summary-row'+(selectedMonth===d.m?' active-m':'');
+    const row=document.createElement('div'); row.className='summary-row'+(selectedMonth===d.m?' active-m':'');
     row.innerHTML=`<div class="summary-mn">${d.m.slice(0,3)}</div><div class="summary-bw"><div class="summary-bf" style="width:${pct}%"></div></div><div class="summary-amt">${fmt(d.spent)}</div><div class="summary-cnt">${d.count} entr${d.count===1?'y':'ies'}</div>`;
-    row.onclick=()=>{ selectedMonth=d.m; filterCat='All'; render(); };
-    grid.appendChild(row);
+    row.onclick=()=>{ selectedMonth=d.m; filterCat='All'; render(); }; grid.appendChild(row);
   });
 }
 
-// ════════════ BUDGET RENDER ════════════
-function render() {
-  buildMonthBar(); populateMonthSelects(); renderCards(); renderEntries(); renderChart(); renderSummary(); renderBudgetEditState();
-}
+function render() { buildMonthBar(); populateMonthSelects(); renderCards(); renderEntries(); renderChart(); renderSummary(); renderBudgetEditState(); }
 function renderBudgetEditState() {
-  const btn=document.getElementById('budgetEditBtn'), inp=document.getElementById('budgetInlineInput'), sav=document.getElementById('budgetSaveBtn');
+  const btn=document.getElementById('budgetEditBtn'),inp=document.getElementById('budgetInlineInput'),sav=document.getElementById('budgetSaveBtn');
   if(budgetEditing){ btn.style.display='none'; inp.style.display='block'; sav.style.display='block'; inp.value=getBudget(selectedMonth); setTimeout(()=>inp.focus(),50); }
   else { btn.style.display='inline'; inp.style.display='none'; sav.style.display='none'; }
 }
@@ -1419,7 +1466,7 @@ function addEntry() {
   document.getElementById('amountInput').value=''; document.getElementById('reasonInput').value='';
   showToast('Entry added ✓'); render();
 }
-function deleteEntry(id) { entries=entries.filter(e=>e.id!==id); save(); render(); showToast('Entry deleted'); }
+function deleteEntry(id){ entries=entries.filter(e=>e.id!==id); save(); render(); showToast('Entry deleted'); }
 
 function openEdit(id) {
   const entry=entries.find(e=>e.id===id); if(!entry) return;
@@ -1431,7 +1478,7 @@ function openEdit(id) {
   MONTHS.forEach(m=>{ const o=document.createElement('option'); o.value=m; o.textContent=m; if(m===entry.month) o.selected=true; sel.appendChild(o); });
   openModal('editModalBackdrop');
 }
-function closeEdit() { editingId=null; closeModal('editModalBackdrop'); }
+function closeEdit(){ editingId=null; closeModal('editModalBackdrop'); }
 document.getElementById('modalCancelBtn').onclick=closeEdit;
 document.getElementById('editModalBackdrop').onclick=function(e){ if(e.target===this) closeEdit(); };
 document.getElementById('editReason').addEventListener('keydown',e=>{ if(e.key==='Enter') saveEdit(); });
@@ -1449,56 +1496,46 @@ function saveEdit() {
 }
 document.getElementById('chartMonthSelect').addEventListener('change',function(){ chartMonthView=this.value; renderChart(); });
 
-
 // ════════════════════════════════════
 //  INVESTMENT TRACKER
 // ════════════════════════════════════
 
 function checkMarketStatus() {
   const now=new Date();
-  const istOffset=5.5*60, utcMin=now.getUTCHours()*60+now.getUTCMinutes();
+  const istOffset=5.5*60,utcMin=now.getUTCHours()*60+now.getUTCMinutes();
   const istMin=(utcMin+istOffset)%1440;
-  const istHour=Math.floor(istMin/60), istMinute=istMin%60;
+  const istHour=Math.floor(istMin/60),istMinute=istMin%60;
   const dow=new Date(now.getTime()+(istOffset+now.getTimezoneOffset())*60000).getDay();
   const isWeekend=dow===0||dow===6;
   const isOpen=!isWeekend&&((istHour===9&&istMinute>=15)||(istHour>9&&istHour<15)||(istHour===15&&istMinute<30));
-  const dot=document.getElementById('mktDot'), lbl=document.getElementById('mktLabel'), sub=document.getElementById('mktSub');
-  if(isWeekend){ dot.className='status-dot closed'; lbl.textContent='Market Closed — Weekend'; sub.textContent='NSE / BSE'; }
-  else if(isOpen){ dot.className='status-dot open'; lbl.textContent='Market Open'; sub.textContent=`NSE / BSE · ${String(istHour).padStart(2,'0')}:${String(Math.floor(istMinute)).padStart(2,'0')} IST`; }
-  else if(istHour<9||(istHour===9&&istMinute<15)){ dot.className='status-dot closed'; lbl.textContent='Pre-Market'; sub.textContent='Opens at 9:15 AM IST'; }
-  else{ dot.className='status-dot closed'; lbl.textContent='Market Closed'; sub.textContent='NSE/BSE closed · Latest EOD prices available'; }
+  const dot=document.getElementById('mktDot'),lbl=document.getElementById('mktLabel'),sub=document.getElementById('mktSub');
+  const diDot=document.getElementById('diStatusDot');
+  if(isWeekend){ dot.className='status-dot closed'; lbl.textContent='Market Closed — Weekend'; sub.textContent='NSE / BSE'; diDot.className='di-status-dot closed'; }
+  else if(isOpen){ dot.className='status-dot open'; lbl.textContent='Market Open'; sub.textContent=`NSE / BSE · ${String(istHour).padStart(2,'0')}:${String(Math.floor(istMinute)).padStart(2,'0')} IST`; diDot.className='di-status-dot'; }
+  else if(istHour<9||(istHour===9&&istMinute<15)){ dot.className='status-dot closed'; lbl.textContent='Pre-Market'; sub.textContent='Opens at 9:15 AM IST'; diDot.className='di-status-dot closed'; }
+  else{ dot.className='status-dot closed'; lbl.textContent='Market Closed'; sub.textContent='NSE/BSE closed · Latest EOD prices available'; diDot.className='di-status-dot closed'; }
   const today=new Date().toDateString();
-  if(!isOpen&&!isWeekend&&istHour>=15&&lastPriceFetch!==today) {
-    setTimeout(()=>fetchAllPrices(false),1500);
-  }
+  if(!isOpen&&!isWeekend&&istHour>=15&&lastPriceFetch!==today) setTimeout(()=>fetchAllPrices(false),1500);
 }
 
 async function fetchMFPrice(schemeCode) {
-  // Privacy note: mfapi.in is an Indian open-source AMFI data proxy.
-  // It sees your AMFI scheme codes + IP but stores no personal data.
   const r=await fetch(`https://api.mfapi.in/mf/${schemeCode}`);
   if(!r.ok) throw new Error('MFAPI error');
-  const d=await r.json();
-  return parseFloat(d.data[0].nav);
+  const d=await r.json(); return parseFloat(d.data[0].nav);
 }
-
 async function fetchStockPrice(ticker) {
-  // Privacy note: Yahoo Finance (query1) sees your ticker symbols + IP.
-  // No authentication is sent, but request metadata may be logged by Yahoo.
-  let sym=ticker.toUpperCase();
-  if(!sym.includes('.')) sym=sym+'.NS';
+  let sym=ticker.toUpperCase(); if(!sym.includes('.')) sym=sym+'.NS';
   const r=await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d&includePrePost=false`);
   if(!r.ok) throw new Error('Yahoo Finance error');
-  const d=await r.json();
-  return d.chart.result[0].meta.regularMarketPrice;
+  const d=await r.json(); return d.chart.result[0].meta.regularMarketPrice;
 }
 
 async function fetchAllPrices(manual=false) {
   const eligible=holdings.filter(h=>h.ticker&&h.units&&parseFloat(h.units)>0);
   if(!eligible.length){ if(manual) showToast('No holdings with ticker + units set'); return; }
-  const btn=document.getElementById('refreshPricesBtn'), icon=document.getElementById('refreshIcon');
+  const btn=document.getElementById('refreshPricesBtn'),icon=document.getElementById('refreshIcon');
   btn.classList.add('spinning'); btn.disabled=true;
-  let updated=0, failed=0;
+  let updated=0,failed=0;
   for(const h of eligible) {
     try {
       let price;
@@ -1509,65 +1546,43 @@ async function fetchAllPrices(manual=false) {
   }
   btn.classList.remove('spinning'); btn.disabled=false;
   if(updated>0){
-    lastPriceFetch=new Date().toDateString();
-    localStorage.setItem('rt26_lastFetch',lastPriceFetch);
+    lastPriceFetch=new Date().toDateString(); localStorage.setItem('rt26_lastFetch',lastPriceFetch);
     saveInv(); renderInvestment();
     const ts=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
     document.getElementById('invLastUpdate').textContent=`Updated at ${ts} IST`;
     showToast(`Prices updated for ${updated} holding${updated>1?'s':''}${failed>0?` (${failed} failed)`:''}  ✓`);
-  } else {
-    showToast(failed>0?`Could not fetch prices (${failed} failed). Check tickers.`:'No tickers configured');
-  }
+  } else { showToast(failed>0?`Could not fetch prices (${failed} failed). Check tickers.`:'No tickers configured'); }
 }
 
-function renderInvestment() {
-  renderInvSummary(); renderAssetAlloc(); renderHoldings(); renderGoals(); renderSIPs();
-}
+function renderInvestment(){ renderInvSummary(); renderAssetAlloc(); renderHoldings(); renderGoals(); renderSIPs(); }
 
 function renderInvSummary() {
   const totalInv=holdings.reduce((s,h)=>s+(h.investedAmount||0),0);
   const totalCurr=holdings.reduce((s,h)=>s+(h.currentValue||0),0);
-  const returns=totalCurr-totalInv;
-  const retPct=totalInv>0?(returns/totalInv)*100:0;
-  const activeSIPs=sips.filter(s=>s.status==='Active');
-  const totalSIP=activeSIPs.reduce((s,sip)=>s+(sip.amount||0),0);
-
+  const returns=totalCurr-totalInv,retPct=totalInv>0?(returns/totalInv)*100:0;
+  const activeSIPs=sips.filter(s=>s.status==='Active'),totalSIP=activeSIPs.reduce((s,sip)=>s+(sip.amount||0),0);
   document.getElementById('invTotalInvested').textContent=fmt(totalInv);
   document.getElementById('invHoldingsCount').textContent=holdings.length+' holdings';
   document.getElementById('invCurrentValue').textContent=fmt(totalCurr);
   if(lastPriceFetch) document.getElementById('invLastUpdate').textContent='Last: '+lastPriceFetch;
-
   const retAmtEl=document.getElementById('invReturnsAmt');
-  retAmtEl.textContent=fmtSigned(returns);
-  retAmtEl.className='card-value '+(returns>=0?'g':'r');
-
+  retAmtEl.textContent=fmtSigned(returns); retAmtEl.className='card-value '+(returns>=0?'g':'r');
   const retPctEl=document.getElementById('invRetPct');
-  retPctEl.textContent=(returns>=0?'+':'')+retPct.toFixed(2)+'%';
-  retPctEl.className='ret-pct '+(returns>=0?'pos':'neg');
-
+  retPctEl.textContent=(returns>=0?'+':'')+retPct.toFixed(2)+'%'; retPctEl.className='ret-pct '+(returns>=0?'pos':'neg');
   document.getElementById('invSIPTotal').textContent=fmt(totalSIP);
   document.getElementById('invActiveSIPs').textContent=activeSIPs.length+' active SIP'+(activeSIPs.length!==1?'s':'');
 }
 
 function renderAssetAlloc() {
-  const canvas=document.getElementById('allocChart'), empty=document.getElementById('allocEmpty');
+  const canvas=document.getElementById('allocChart'),empty=document.getElementById('allocEmpty');
   if(!holdings.length){ canvas.style.display='none'; empty.style.display='block'; if(allocChart){allocChart.destroy();allocChart=null;} return; }
   const totals={};
   holdings.forEach(h=>{ totals[h.type]=(totals[h.type]||0)+(h.currentValue||h.investedAmount||0); });
   const total=Object.values(totals).reduce((a,b)=>a+b,0);
-  const labels=Object.keys(totals), data=labels.map(l=>totals[l]);
-  const colors=labels.map(l=>ASSET_COLORS[l]||ASSET_COLORS.Other);
+  const labels=Object.keys(totals),data=labels.map(l=>totals[l]),colors=labels.map(l=>ASSET_COLORS[l]||ASSET_COLORS.Other);
   canvas.style.display='block'; empty.style.display='none';
   if(allocChart){allocChart.destroy();allocChart=null;}
-  allocChart=new Chart(canvas,{
-    type:'doughnut',
-    data:{ labels, datasets:[{ data, backgroundColor:colors.map(c=>c+'bb'), borderColor:colors, borderWidth:1.5, hoverOffset:6 }] },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:'58%',
-      plugins:{ legend:{ position:'right', labels:{ color:'rgba(235,235,245,0.55)', font:{family:'Nunito',size:11}, padding:10, boxWidth:8, boxHeight:8,
-        generateLabels(chart){ return chart.data.labels.map((l,i)=>({ text:`${l} ${((chart.data.datasets[0].data[i]/total)*100).toFixed(1)}%`, fillStyle:chart.data.datasets[0].backgroundColor[i], strokeStyle:chart.data.datasets[0].borderColor[i], lineWidth:1, index:i })); } } },
-        tooltip:{ backgroundColor:'#1C1C1E', borderColor:'rgba(84,84,88,0.65)', borderWidth:1, titleColor:'#FFFFFF', bodyColor:'rgba(235,235,245,0.6)', padding:12,
-          callbacks:{ label:ctx=>` ${ctx.label}: ₹${ctx.parsed.toLocaleString('en-IN')} (${((ctx.parsed/total)*100).toFixed(1)}%)` } } } }
-  });
+  allocChart=new Chart(canvas,{ type:'doughnut', data:{ labels, datasets:[{ data, backgroundColor:colors.map(c=>c+'bb'), borderColor:colors, borderWidth:1.5, hoverOffset:6 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'58%', plugins:{ legend:{ position:'right', labels:{ color:'rgba(235,235,245,0.55)', font:{family:'Nunito',size:11}, padding:10, boxWidth:8, boxHeight:8, generateLabels(chart){ return chart.data.labels.map((l,i)=>({ text:`${l} ${((chart.data.datasets[0].data[i]/total)*100).toFixed(1)}%`, fillStyle:chart.data.datasets[0].backgroundColor[i], strokeStyle:chart.data.datasets[0].borderColor[i], lineWidth:1, index:i })); } } }, tooltip:{ backgroundColor:'#1C1C1E', borderColor:'rgba(84,84,88,0.65)', borderWidth:1, titleColor:'#FFFFFF', bodyColor:'rgba(235,235,245,0.6)', padding:12, callbacks:{ label:ctx=>` ${ctx.label}: ₹${ctx.parsed.toLocaleString('en-IN')} (${((ctx.parsed/total)*100).toFixed(1)}%)` } } } } });
 }
 
 function addHolding() {
@@ -1583,8 +1598,7 @@ function addHolding() {
   holdings.push({ id:uid(), name, type, investedAmount:inv, currentValue:curr, units:units||null, startDate:date, ticker:ticker||null });
   saveInv();
   document.getElementById('hNameInput').value=''; document.getElementById('hInvestedInput').value='';
-  document.getElementById('hCurrentInput').value=''; document.getElementById('hUnitsInput').value='';
-  document.getElementById('hTickerInput').value='';
+  document.getElementById('hCurrentInput').value=''; document.getElementById('hUnitsInput').value=''; document.getElementById('hTickerInput').value='';
   showToast('Holding added ✓'); renderInvestment();
 }
 
@@ -1593,117 +1607,54 @@ function renderHoldings() {
   const typeFilterEl=document.getElementById('typeFilter');
   const types=['All',...new Set(holdings.map(h=>h.type))];
   typeFilterEl.innerHTML='';
-  types.forEach(t=>{
-    const p=document.createElement('button');
-    p.className='filter-pill'+(hFilterType===t?' p-active':'');
-    p.textContent=t; p.style.whiteSpace='nowrap';
-    p.onclick=()=>{ hFilterType=t; renderHoldings(); };
-    typeFilterEl.appendChild(p);
-  });
+  types.forEach(t=>{ const p=document.createElement('button'); p.className='filter-pill'+(hFilterType===t?' p-active':''); p.textContent=t; p.style.whiteSpace='nowrap'; p.onclick=()=>{ hFilterType=t; renderHoldings(); }; typeFilterEl.appendChild(p); });
   if(!types.includes(hFilterType)) hFilterType='All';
-
-  let filtered=holdings.filter(h=>{
-    const matchSearch=!search||h.name.toLowerCase().includes(search)||h.type.toLowerCase().includes(search);
-    const matchType=hFilterType==='All'||h.type===hFilterType;
-    return matchSearch&&matchType;
-  });
-
-  filtered.sort((a,b)=>{
-    let av,bv;
-    if(hSortCol==='returns'){ av=((a.currentValue||0)-(a.investedAmount||0)); bv=((b.currentValue||0)-(b.investedAmount||0)); }
-    else if(hSortCol==='retPct'){ av=a.investedAmount?(((a.currentValue||0)-(a.investedAmount||0))/a.investedAmount)*100:0; bv=b.investedAmount?(((b.currentValue||0)-(b.investedAmount||0))/b.investedAmount)*100:0; }
-    else { av=a[hSortCol]||''; bv=b[hSortCol]||''; }
-    if(av<bv) return hSortDir==='asc'?-1:1;
-    if(av>bv) return hSortDir==='asc'?1:-1;
-    return 0;
-  });
-
-  ['name','type','investedAmount','currentValue','returns','retPct','startDate'].forEach(col=>{
-    const el=document.getElementById('sarr-'+col);
-    if(el) el.textContent=hSortCol===col?(hSortDir==='asc'?'↑':'↓'):'↕';
-    const th=el?.closest('th'); if(th){ th.classList.toggle('sort-active',hSortCol===col); }
-  });
-
+  let filtered=holdings.filter(h=>{ const ms=!search||h.name.toLowerCase().includes(search)||h.type.toLowerCase().includes(search); const mt=hFilterType==='All'||h.type===hFilterType; return ms&&mt; });
+  filtered.sort((a,b)=>{ let av,bv; if(hSortCol==='returns'){av=(a.currentValue||0)-(a.investedAmount||0);bv=(b.currentValue||0)-(b.investedAmount||0);} else if(hSortCol==='retPct'){av=a.investedAmount?(((a.currentValue||0)-(a.investedAmount||0))/a.investedAmount)*100:0;bv=b.investedAmount?(((b.currentValue||0)-(b.investedAmount||0))/b.investedAmount)*100:0;} else{av=a[hSortCol]||'';bv=b[hSortCol]||'';} if(av<bv) return hSortDir==='asc'?-1:1; if(av>bv) return hSortDir==='asc'?1:-1; return 0; });
+  ['name','type','investedAmount','currentValue','returns','retPct','startDate'].forEach(col=>{ const el=document.getElementById('sarr-'+col); if(el) el.textContent=hSortCol===col?(hSortDir==='asc'?'↑':'↓'):'↕'; const th=el?.closest('th'); if(th) th.classList.toggle('sort-active',hSortCol===col); });
   const tbody=document.getElementById('holdingsTbody'); tbody.innerHTML='';
-  if(!filtered.length){
-    tbody.innerHTML=`<tr><td colspan="8" class="table-empty">No holdings found${search?' matching your search':''}</td></tr>`;
-    return;
-  }
+  if(!filtered.length){ tbody.innerHTML=`<tr><td colspan="8" class="table-empty">No holdings found${search?' matching your search':''}</td></tr>`; return; }
   filtered.forEach(h=>{
     const ret=(h.currentValue||0)-(h.investedAmount||0);
     const retPct=h.investedAmount?(ret/h.investedAmount)*100:0;
     const color=ASSET_COLORS[h.type]||ASSET_COLORS.Other;
     const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td><span class="td-name">${esc(h.name)}</span>${h.ticker?`<span class="fetch-dot" title="Live price enabled"></span>`:''}</td>
-      <td><span class="td-type" style="background:${color}1A;color:${color};border:1px solid ${color}40">${esc(h.type)}</span></td>
-      <td class="td-mono">${fmt(h.investedAmount||0)}</td>
-      <td class="td-mono">${fmt(h.currentValue||0)}</td>
-      <td class="${ret>=0?'td-ret-pos':'td-ret-neg'}">${fmtSigned(ret)}</td>
-      <td class="${ret>=0?'td-ret-pos':'td-ret-neg'}">${(ret>=0?'+':'')+retPct.toFixed(2)}%</td>
-      <td style="font-size:11px;color:var(--label-3)">${h.startDate||'—'}</td>
-      <td><div class="td-actions">
-        <button class="t-edit-btn" onclick="openHoldingEdit('${h.id}')">✎</button>
-        <button class="t-del-btn" onclick="deleteHolding('${h.id}')">✕</button>
-      </div></td>`;
+    tr.innerHTML=`<td><span class="td-name">${esc(h.name)}</span>${h.ticker?`<span class="fetch-dot" title="Live price enabled"></span>`:''}</td><td><span class="td-type" style="background:${color}1A;color:${color};border:1px solid ${color}40">${esc(h.type)}</span></td><td class="td-mono">${fmt(h.investedAmount||0)}</td><td class="td-mono">${fmt(h.currentValue||0)}</td><td class="${ret>=0?'td-ret-pos':'td-ret-neg'}">${fmtSigned(ret)}</td><td class="${ret>=0?'td-ret-pos':'td-ret-neg'}">${(ret>=0?'+':'')+retPct.toFixed(2)}%</td><td style="font-size:11px;color:var(--label-3)">${h.startDate||'—'}</td><td><div class="td-actions"><button class="t-edit-btn" onclick="openHoldingEdit('${h.id}')">✎</button><button class="t-del-btn" onclick="deleteHolding('${h.id}')">✕</button></div></td>`;
     tbody.appendChild(tr);
   });
 }
 
-function sortHoldings(col) {
-  if(hSortCol===col) hSortDir=hSortDir==='asc'?'desc':'asc';
-  else { hSortCol=col; hSortDir='asc'; }
-  renderHoldings();
-}
-
-function deleteHolding(id) { holdings=holdings.filter(h=>h.id!==id); saveInv(); renderInvestment(); showToast('Holding deleted'); }
+function sortHoldings(col){ if(hSortCol===col) hSortDir=hSortDir==='asc'?'desc':'asc'; else{hSortCol=col;hSortDir='asc';} renderHoldings(); }
+function deleteHolding(id){ holdings=holdings.filter(h=>h.id!==id); saveInv(); renderInvestment(); showToast('Holding deleted'); }
 
 function openHoldingEdit(id) {
   const h=holdings.find(x=>x.id===id); if(!h) return;
   editingHoldingId=id;
-  document.getElementById('ehName').value=h.name;
-  document.getElementById('ehType').value=h.type;
-  document.getElementById('ehInvested').value=h.investedAmount||'';
-  document.getElementById('ehCurrent').value=h.currentValue||'';
-  document.getElementById('ehUnits').value=h.units||'';
-  document.getElementById('ehDate').value=h.startDate||'';
-  document.getElementById('ehTicker').value=h.ticker||'';
+  document.getElementById('ehName').value=h.name; document.getElementById('ehType').value=h.type;
+  document.getElementById('ehInvested').value=h.investedAmount||''; document.getElementById('ehCurrent').value=h.currentValue||'';
+  document.getElementById('ehUnits').value=h.units||''; document.getElementById('ehDate').value=h.startDate||''; document.getElementById('ehTicker').value=h.ticker||'';
   openModal('holdingModal');
 }
 function saveHoldingEdit() {
   const idx=holdings.findIndex(h=>h.id===editingHoldingId); if(idx===-1) return;
-  const name=document.getElementById('ehName').value.trim();
-  if(!name){ showToast('Enter a name'); return; }
-  holdings[idx]={ ...holdings[idx], name, type:document.getElementById('ehType').value,
-    investedAmount:parseFloat(document.getElementById('ehInvested').value)||0,
-    currentValue:parseFloat(document.getElementById('ehCurrent').value)||0,
-    units:document.getElementById('ehUnits').value||null,
-    startDate:document.getElementById('ehDate').value||null,
-    ticker:document.getElementById('ehTicker').value.trim()||null };
+  const name=document.getElementById('ehName').value.trim(); if(!name){ showToast('Enter a name'); return; }
+  holdings[idx]={ ...holdings[idx], name, type:document.getElementById('ehType').value, investedAmount:parseFloat(document.getElementById('ehInvested').value)||0, currentValue:parseFloat(document.getElementById('ehCurrent').value)||0, units:document.getElementById('ehUnits').value||null, startDate:document.getElementById('ehDate').value||null, ticker:document.getElementById('ehTicker').value.trim()||null };
   saveInv(); closeModal('holdingModal'); showToast('Holding updated ✓'); renderInvestment();
 }
 
 function openGoalModal(id) {
-  editingGoalId=id||null;
-  const g=id?goals.find(x=>x.id===id):null;
+  editingGoalId=id||null; const g=id?goals.find(x=>x.id===id):null;
   document.getElementById('goalModalTitle').textContent=id?'Edit Goal':'Add Financial Goal';
-  document.getElementById('gName').value=g?g.name:'';
-  document.getElementById('gCategory').value=g?g.category:'Emergency Fund';
-  document.getElementById('gTarget').value=g?g.targetAmount:'';
-  document.getElementById('gSaved').value=g?g.savedAmount:'';
-  document.getElementById('gYear').value=g?g.targetYear:'';
-  openModal('goalModal');
+  document.getElementById('gName').value=g?g.name:''; document.getElementById('gCategory').value=g?g.category:'Emergency Fund';
+  document.getElementById('gTarget').value=g?g.targetAmount:''; document.getElementById('gSaved').value=g?g.savedAmount:'';
+  document.getElementById('gYear').value=g?g.targetYear:''; openModal('goalModal');
 }
 function saveGoal() {
-  const name=document.getElementById('gName').value.trim();
-  const target=parseFloat(document.getElementById('gTarget').value)||0;
-  const saved=parseFloat(document.getElementById('gSaved').value)||0;
-  const year=document.getElementById('gYear').value;
-  if(!name){ showToast('Enter a goal name'); return; }
-  if(!target){ showToast('Enter target amount'); return; }
+  const name=document.getElementById('gName').value.trim(); const target=parseFloat(document.getElementById('gTarget').value)||0;
+  const saved=parseFloat(document.getElementById('gSaved').value)||0; const year=document.getElementById('gYear').value;
+  if(!name){ showToast('Enter a goal name'); return; } if(!target){ showToast('Enter target amount'); return; }
   const data={ id:editingGoalId||uid(), name, category:document.getElementById('gCategory').value, targetAmount:target, savedAmount:saved, targetYear:year };
-  if(editingGoalId){ const idx=goals.findIndex(g=>g.id===editingGoalId); if(idx>-1) goals[idx]=data; }
-  else goals.push(data);
+  if(editingGoalId){ const idx=goals.findIndex(g=>g.id===editingGoalId); if(idx>-1) goals[idx]=data; } else goals.push(data);
   saveInv(); closeModal('goalModal'); showToast(editingGoalId?'Goal updated ✓':'Goal added ✓'); renderGoals();
 }
 function renderGoals() {
@@ -1715,56 +1666,25 @@ function renderGoals() {
     const badge_bg=pct>=80?'rgba(48,209,88,0.14)':pct>=40?'rgba(255,159,10,0.12)':'rgba(64,203,224,0.13)';
     const remaining=g.targetAmount-g.savedAmount;
     const card=document.createElement('div'); card.className='goal-card';
-    card.innerHTML=`
-      <div class="goal-header">
-        <div class="goal-name">${GOAL_ICONS[g.category]||'🎯'} ${esc(g.name)}</div>
-        <div class="goal-actions">
-          <button class="t-edit-btn" onclick="openGoalModal('${g.id}')">✎</button>
-          <button class="t-del-btn" onclick="deleteGoal('${g.id}')">✕</button>
-        </div>
-      </div>
-      <div class="goal-amounts">
-        <div>
-          <div class="goal-current" style="color:${color}">${fmt(g.savedAmount)}</div>
-          <div style="font-size:10px;color:var(--label-3);margin-top:2px">saved</div>
-        </div>
-        <div class="goal-target">of <span>${fmt(g.targetAmount)}</span></div>
-      </div>
-      <div class="goal-progress-track">
-        <div class="goal-progress-fill" style="width:${pct}%;background:${color}"></div>
-      </div>
-      <div class="goal-footer">
-        <div class="goal-remaining">${remaining>0?fmt(remaining)+' remaining':'Goal reached! 🎉'}</div>
-        <div class="goal-year" style="display:flex;align-items:center;gap:6px">
-          <span class="goal-pct-badge" style="background:${badge_bg};color:${color}">${pct.toFixed(0)}%</span>
-          ${g.targetYear?`<span>by ${g.targetYear}</span>`:''}
-        </div>
-      </div>`;
+    card.innerHTML=`<div class="goal-header"><div class="goal-name">${GOAL_ICONS[g.category]||'🎯'} ${esc(g.name)}</div><div class="goal-actions"><button class="t-edit-btn" onclick="openGoalModal('${g.id}')">✎</button><button class="t-del-btn" onclick="deleteGoal('${g.id}')">✕</button></div></div><div class="goal-amounts"><div><div class="goal-current" style="color:${color}">${fmt(g.savedAmount)}</div><div style="font-size:10px;color:var(--label-3);margin-top:2px">saved</div></div><div class="goal-target">of <span>${fmt(g.targetAmount)}</span></div></div><div class="goal-progress-track"><div class="goal-progress-fill" style="width:${pct}%;background:${color}"></div></div><div class="goal-footer"><div class="goal-remaining">${remaining>0?fmt(remaining)+' remaining':'Goal reached! 🎉'}</div><div class="goal-year" style="display:flex;align-items:center;gap:6px"><span class="goal-pct-badge" style="background:${badge_bg};color:${color}">${pct.toFixed(0)}%</span>${g.targetYear?`<span>by ${g.targetYear}</span>`:''}</div></div>`;
     grid.appendChild(card);
   });
 }
-function deleteGoal(id) { goals=goals.filter(g=>g.id!==id); saveInv(); renderGoals(); showToast('Goal deleted'); }
+function deleteGoal(id){ goals=goals.filter(g=>g.id!==id); saveInv(); renderGoals(); showToast('Goal deleted'); }
 
 function openSIPModal(id) {
-  editingSIPId=id||null;
-  const s=id?sips.find(x=>x.id===id):null;
+  editingSIPId=id||null; const s=id?sips.find(x=>x.id===id):null;
   document.getElementById('sipModalTitle').textContent=id?'Edit SIP':'Add SIP';
-  document.getElementById('sipName').value=s?s.fundName:'';
-  document.getElementById('sipAmount').value=s?s.amount:'';
-  document.getElementById('sipDay').value=s?s.dayOfMonth:'';
-  document.getElementById('sipStatus').value=s?s.status:'Active';
-  document.getElementById('sipDate').value=s?s.startDate:'';
-  openModal('sipModal');
+  document.getElementById('sipName').value=s?s.fundName:''; document.getElementById('sipAmount').value=s?s.amount:'';
+  document.getElementById('sipDay').value=s?s.dayOfMonth:''; document.getElementById('sipStatus').value=s?s.status:'Active';
+  document.getElementById('sipDate').value=s?s.startDate:''; openModal('sipModal');
 }
 function saveSIP() {
-  const name=document.getElementById('sipName').value.trim();
-  const amount=parseFloat(document.getElementById('sipAmount').value)||0;
+  const name=document.getElementById('sipName').value.trim(); const amount=parseFloat(document.getElementById('sipAmount').value)||0;
   const day=parseInt(document.getElementById('sipDay').value)||1;
-  if(!name){ showToast('Enter fund name'); return; }
-  if(!amount){ showToast('Enter SIP amount'); return; }
+  if(!name){ showToast('Enter fund name'); return; } if(!amount){ showToast('Enter SIP amount'); return; }
   const data={ id:editingSIPId||uid(), fundName:name, amount, dayOfMonth:day, status:document.getElementById('sipStatus').value, startDate:document.getElementById('sipDate').value };
-  if(editingSIPId){ const idx=sips.findIndex(s=>s.id===editingSIPId); if(idx>-1) sips[idx]=data; }
-  else sips.push(data);
+  if(editingSIPId){ const idx=sips.findIndex(s=>s.id===editingSIPId); if(idx>-1) sips[idx]=data; } else sips.push(data);
   saveInv(); closeModal('sipModal'); showToast(editingSIPId?'SIP updated ✓':'SIP added ✓'); renderSIPs(); renderInvSummary();
 }
 function renderSIPs() {
@@ -1772,39 +1692,23 @@ function renderSIPs() {
   if(!sips.length){ list.innerHTML='<div class="sip-empty">No SIPs tracked yet. Add your first SIP above.</div>'; return; }
   sips.forEach(s=>{
     const row=document.createElement('div'); row.className='sip-row';
-    row.innerHTML=`
-      <div class="sip-info">
-        <div class="sip-name">${esc(s.fundName)}</div>
-        <div class="sip-meta">Every ${ord(s.dayOfMonth)} of the month${s.startDate?' · Since '+s.startDate:''}</div>
-      </div>
-      <div class="sip-amount">${fmt(s.amount)}/mo</div>
-      <span class="sip-status ${s.status.toLowerCase()}">${s.status}</span>
-      <div class="entry-actions">
-        <button class="entry-edit-btn" onclick="openSIPModal('${s.id}')">✎</button>
-        <button class="entry-del-btn" onclick="deleteSIP('${s.id}')">✕</button>
-      </div>`;
+    row.innerHTML=`<div class="sip-info"><div class="sip-name">${esc(s.fundName)}</div><div class="sip-meta">Every ${ord(s.dayOfMonth)} of the month${s.startDate?' · Since '+s.startDate:''}</div></div><div class="sip-amount">${fmt(s.amount)}/mo</div><span class="sip-status ${s.status.toLowerCase()}">${s.status}</span><div class="entry-actions"><button class="entry-edit-btn" onclick="openSIPModal('${s.id}')">✎</button><button class="entry-del-btn" onclick="deleteSIP('${s.id}')">✕</button></div>`;
     list.appendChild(row);
   });
 }
-function deleteSIP(id) { sips=sips.filter(s=>s.id!==id); saveInv(); renderSIPs(); renderInvSummary(); showToast('SIP deleted'); }
+function deleteSIP(id){ sips=sips.filter(s=>s.id!==id); saveInv(); renderSIPs(); renderInvSummary(); showToast('SIP deleted'); }
 
 function exportCSV() {
   if(!holdings.length){ showToast('No holdings to export'); return; }
   const headers=['Name','Type','Invested (₹)','Current Value (₹)','Returns (₹)','Returns (%)','Units','Ticker','Start Date'];
-  const rows=holdings.map(h=>{
-    const ret=(h.currentValue||0)-(h.investedAmount||0);
-    const retPct=h.investedAmount?(ret/h.investedAmount*100).toFixed(2):'0.00';
-    return [h.name,h.type,h.investedAmount||0,h.currentValue||0,ret.toFixed(2),retPct,h.units||'',h.ticker||'',h.startDate||''];
-  });
+  const rows=holdings.map(h=>{ const ret=(h.currentValue||0)-(h.investedAmount||0); const retPct=h.investedAmount?(ret/h.investedAmount*100).toFixed(2):'0.00'; return [h.name,h.type,h.investedAmount||0,h.currentValue||0,ret.toFixed(2),retPct,h.units||'',h.ticker||'',h.startDate||'']; });
   const csv=[headers,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download=`portfolio_${new Date().toISOString().slice(0,10)}.csv`; a.click();
-  URL.revokeObjectURL(url); showToast('CSV exported ✓');
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`portfolio_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url); showToast('CSV exported ✓');
 }
 
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 ['editModalBackdrop','holdingModal','goalModal','sipModal'].forEach(id=>{
   const el=document.getElementById(id);
   if(el) el.addEventListener('click',function(e){ if(e.target===this) closeModal(id); });
@@ -1821,166 +1725,37 @@ function showToast(msg) {
 load();
 chartMonthView=selectedMonth;
 render();
-setTimeout(()=>{
-  const bar=document.getElementById('monthBar'), active=bar.querySelector('.month-pill.active');
-  if(active) active.scrollIntoView({behavior:'instant',block:'nearest',inline:'center'});
-},60);
+// Scroll the active month pill into view
+setTimeout(()=>{ const bar=document.getElementById('monthBar'),active=bar.querySelector('.month-pill.active'); if(active) active.scrollIntoView({behavior:'instant',block:'nearest',inline:'center'}); },60);
 
 // ════════════ PWA ICON GENERATOR ════════════
-// Generates a high-resolution 1024×1024 iOS-style icon at runtime
-// and injects it as <link rel="apple-touch-icon"> so it appears
-// on the Home Screen when "Add to Home Screen" is used on iOS.
 (function generatePWAIcon() {
-  const SIZE = 1024;
-  const c = document.createElement('canvas');
-  c.width = SIZE; c.height = SIZE;
-  const ctx = c.getContext('2d');
-
-  // ── 1. Background: deep dark with subtle gradient ──────────────
-  const bgGrad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
-  bgGrad.addColorStop(0,   '#0A0F12');
-  bgGrad.addColorStop(0.5, '#0D1A1F');
-  bgGrad.addColorStop(1,   '#060C0E');
-  ctx.fillStyle = bgGrad;
-  // iOS rounds corners automatically for apple-touch-icon;
-  // we still draw a rounded rect so the raw PNG looks clean.
-  const R = 230;
-  ctx.beginPath();
-  ctx.moveTo(R, 0);
-  ctx.lineTo(SIZE - R, 0);
-  ctx.quadraticCurveTo(SIZE, 0, SIZE, R);
-  ctx.lineTo(SIZE, SIZE - R);
-  ctx.quadraticCurveTo(SIZE, SIZE, SIZE - R, SIZE);
-  ctx.lineTo(R, SIZE);
-  ctx.quadraticCurveTo(0, SIZE, 0, SIZE - R);
-  ctx.lineTo(0, R);
-  ctx.quadraticCurveTo(0, 0, R, 0);
-  ctx.closePath();
-  ctx.fill();
-
-  // ── 2. Background mesh glows ───────────────────────────────────
-  const glows = [
-    { x: 200,  y: 220,  r: 380, c1: 'rgba(48,209,88,0.22)',  c2: 'transparent' },
-    { x: 820,  y: 800,  r: 340, c1: 'rgba(64,203,224,0.18)', c2: 'transparent' },
-    { x: 600,  y: 350,  r: 260, c1: 'rgba(10,132,255,0.10)', c2: 'transparent' },
-  ];
-  glows.forEach(g => {
-    const rg = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.r);
-    rg.addColorStop(0, g.c1); rg.addColorStop(1, g.c2);
-    ctx.fillStyle = rg; ctx.fillRect(0, 0, SIZE, SIZE);
-  });
-
-  // ── 3. Glass card (centre) ────────────────────────────────────
-  const cardX = 142, cardY = 200, cardW = 740, cardH = 620, cardR = 90;
-  ctx.save();
-  // card shadow
-  ctx.shadowColor = 'rgba(0,0,0,0.55)';
-  ctx.shadowBlur = 80;
-  ctx.shadowOffsetY = 24;
-  // card fill
-  const cardGrad = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardH);
-  cardGrad.addColorStop(0, 'rgba(28,40,45,0.82)');
-  cardGrad.addColorStop(1, 'rgba(14,22,26,0.88)');
-  ctx.fillStyle = cardGrad;
-  ctx.beginPath();
-  ctx.roundRect(cardX, cardY, cardW, cardH, cardR);
-  ctx.fill();
-  ctx.shadowColor = 'transparent';
-  // card border
-  ctx.strokeStyle = 'rgba(64,203,224,0.28)';
-  ctx.lineWidth = 3;
-  ctx.stroke();
-  // inner highlight
-  ctx.strokeStyle = 'rgba(255,255,255,0.055)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(cardX + 2, cardY + 2, cardW - 4, cardH - 4, cardR - 2);
-  ctx.stroke();
-  ctx.restore();
-
-  // ── 4. Rupee symbol ───────────────────────────────────────────
-  // Large, bold ₹ centred on card
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  // outer glow pass
-  ctx.shadowColor = '#30D158';
-  ctx.shadowBlur = 80;
-  ctx.fillStyle = '#30D158';
-  ctx.font = '900 380px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif';
-  ctx.fillText('₹', SIZE / 2, cardY + cardH / 2 - 10);
-  // crisp centre pass
-  ctx.shadowBlur = 20;
-  ctx.shadowColor = 'rgba(48,209,88,0.5)';
-  const symGrad = ctx.createLinearGradient(SIZE/2 - 160, cardY + 120, SIZE/2 + 160, cardY + cardH - 80);
-  symGrad.addColorStop(0,   '#5DEEA0');
-  symGrad.addColorStop(0.45,'#30D158');
-  symGrad.addColorStop(1,   '#1DA348');
-  ctx.fillStyle = symGrad;
-  ctx.fillText('₹', SIZE / 2, cardY + cardH / 2 - 10);
-  ctx.restore();
-
-  // ── 5. "RupeeTrack" wordmark ──────────────────────────────────
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.font = '700 72px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.82)';
-  ctx.letterSpacing = '-1px';
-  ctx.fillText('RupeeTrack', SIZE / 2, cardY + cardH - 110);
-  ctx.restore();
-
-  // ── 6. Teal accent bar (bottom of card) ───────────────────────
-  ctx.save();
-  const barH = 8, barY = cardY + cardH - 52, barX = cardX + 60, barW2 = cardW - 120;
-  const barGrad = ctx.createLinearGradient(barX, barY, barX + barW2, barY);
-  barGrad.addColorStop(0,   'rgba(64,203,224,0)');
-  barGrad.addColorStop(0.2, '#40CBE0');
-  barGrad.addColorStop(0.8, '#40CBE0');
-  barGrad.addColorStop(1,   'rgba(64,203,224,0)');
-  ctx.fillStyle = barGrad;
-  ctx.shadowColor = '#40CBE0';
-  ctx.shadowBlur = 18;
-  ctx.beginPath();
-  ctx.roundRect(barX, barY, barW2, barH, 4);
-  ctx.fill();
-  ctx.restore();
-
-  // ── 7. Mini stat pills (top of card) ─────────────────────────
-  const pills = [
-    { label: '+12.4%', color: '#30D158', x: cardX + 80  },
-    { label: 'SIP',    color: '#40CBE0', x: cardX + 310 },
-    { label: 'FY26',   color: '#FF9F0A', x: cardX + 490 },
-  ];
-  pills.forEach(pill => {
-    ctx.save();
-    ctx.fillStyle = pill.color + '22';
-    ctx.strokeStyle = pill.color + '55';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(pill.x, cardY + 52, 160, 58, 20);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = pill.color;
-    ctx.font = '700 36px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(pill.label, pill.x + 80, cardY + 81);
-    ctx.restore();
-  });
-
-  // ── 8. Inject as apple-touch-icon ────────────────────────────
-  const dataURL = c.toDataURL('image/png');
-  ['180','167','152','120'].forEach(sz => {
-    const link = document.createElement('link');
-    link.rel = 'apple-touch-icon';
-    link.sizes = `${sz}x${sz}`;
-    link.href = dataURL;          // single 1024px canvas scaled by iOS
-    document.head.appendChild(link);
-  });
-  // Also set as standard favicon
-  const fav = document.querySelector("link[rel='icon']") || document.createElement('link');
-  fav.rel = 'icon'; fav.type = 'image/png'; fav.href = dataURL;
-  document.head.appendChild(fav);
+  const SIZE=1024,c=document.createElement('canvas');
+  c.width=SIZE; c.height=SIZE;
+  const ctx=c.getContext('2d');
+  const bgGrad=ctx.createLinearGradient(0,0,SIZE,SIZE);
+  bgGrad.addColorStop(0,'#0A0F12'); bgGrad.addColorStop(0.5,'#0D1A1F'); bgGrad.addColorStop(1,'#060C0E');
+  ctx.fillStyle=bgGrad;
+  const R=230;
+  ctx.beginPath(); ctx.moveTo(R,0); ctx.lineTo(SIZE-R,0); ctx.quadraticCurveTo(SIZE,0,SIZE,R); ctx.lineTo(SIZE,SIZE-R); ctx.quadraticCurveTo(SIZE,SIZE,SIZE-R,SIZE); ctx.lineTo(R,SIZE); ctx.quadraticCurveTo(0,SIZE,0,SIZE-R); ctx.lineTo(0,R); ctx.quadraticCurveTo(0,0,R,0); ctx.closePath(); ctx.fill();
+  [{x:200,y:220,r:380,c1:'rgba(48,209,88,0.22)',c2:'transparent'},{x:820,y:800,r:340,c1:'rgba(64,203,224,0.18)',c2:'transparent'},{x:600,y:350,r:260,c1:'rgba(10,132,255,0.10)',c2:'transparent'}].forEach(g=>{ const rg=ctx.createRadialGradient(g.x,g.y,0,g.x,g.y,g.r); rg.addColorStop(0,g.c1); rg.addColorStop(1,g.c2); ctx.fillStyle=rg; ctx.fillRect(0,0,SIZE,SIZE); });
+  const cardX=142,cardY=200,cardW=740,cardH=620,cardR=90;
+  ctx.save(); ctx.shadowColor='rgba(0,0,0,0.55)'; ctx.shadowBlur=80; ctx.shadowOffsetY=24;
+  const cardGrad=ctx.createLinearGradient(cardX,cardY,cardX,cardY+cardH); cardGrad.addColorStop(0,'rgba(28,40,45,0.82)'); cardGrad.addColorStop(1,'rgba(14,22,26,0.88)');
+  ctx.fillStyle=cardGrad; ctx.beginPath(); ctx.roundRect(cardX,cardY,cardW,cardH,cardR); ctx.fill(); ctx.shadowColor='transparent';
+  ctx.strokeStyle='rgba(64,203,224,0.28)'; ctx.lineWidth=3; ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.055)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.roundRect(cardX+2,cardY+2,cardW-4,cardH-4,cardR-2); ctx.stroke(); ctx.restore();
+  ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.shadowColor='#30D158'; ctx.shadowBlur=80; ctx.fillStyle='#30D158';
+  ctx.font='900 380px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif'; ctx.fillText('₹',SIZE/2,cardY+cardH/2-10);
+  ctx.shadowBlur=20; ctx.shadowColor='rgba(48,209,88,0.5)';
+  const symGrad=ctx.createLinearGradient(SIZE/2-160,cardY+120,SIZE/2+160,cardY+cardH-80); symGrad.addColorStop(0,'#5DEEA0'); symGrad.addColorStop(0.45,'#30D158'); symGrad.addColorStop(1,'#1DA348');
+  ctx.fillStyle=symGrad; ctx.fillText('₹',SIZE/2,cardY+cardH/2-10); ctx.restore();
+  ctx.save(); ctx.textAlign='center'; ctx.textBaseline='top'; ctx.font='700 72px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif'; ctx.fillStyle='rgba(255,255,255,0.82)'; ctx.fillText('RupeeTrack',SIZE/2,cardY+cardH-110); ctx.restore();
+  ctx.save(); const barH=8,barY=cardY+cardH-52,barX=cardX+60,barW2=cardW-120; const barGrad=ctx.createLinearGradient(barX,barY,barX+barW2,barY); barGrad.addColorStop(0,'rgba(64,203,224,0)'); barGrad.addColorStop(0.2,'#40CBE0'); barGrad.addColorStop(0.8,'#40CBE0'); barGrad.addColorStop(1,'rgba(64,203,224,0)'); ctx.fillStyle=barGrad; ctx.shadowColor='#40CBE0'; ctx.shadowBlur=18; ctx.beginPath(); ctx.roundRect(barX,barY,barW2,barH,4); ctx.fill(); ctx.restore();
+  [{label:'+12.4%',color:'#30D158',x:cardX+80},{label:'SIP',color:'#40CBE0',x:cardX+310},{label:'FY26',color:'#FF9F0A',x:cardX+490}].forEach(pill=>{ ctx.save(); ctx.fillStyle=pill.color+'22'; ctx.strokeStyle=pill.color+'55'; ctx.lineWidth=2; ctx.beginPath(); ctx.roundRect(pill.x,cardY+52,160,58,20); ctx.fill(); ctx.stroke(); ctx.fillStyle=pill.color; ctx.font='700 36px -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(pill.label,pill.x+80,cardY+81); ctx.restore(); });
+  const dataURL=c.toDataURL('image/png');
+  ['180','167','152','120'].forEach(sz=>{ const link=document.createElement('link'); link.rel='apple-touch-icon'; link.sizes=`${sz}x${sz}`; link.href=dataURL; document.head.appendChild(link); });
+  const fav=document.querySelector("link[rel='icon']")||document.createElement('link'); fav.rel='icon'; fav.type='image/png'; fav.href=dataURL; document.head.appendChild(fav);
 })();
 </script>
 </body>
